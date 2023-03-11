@@ -2,7 +2,6 @@ package evaluator
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -17,51 +16,6 @@ type RuleEvaluator struct {
 	fieldmappings   map[string][]string // a compiled mapping from rule fieldnames to possible event fieldnames
 
 	expandPlaceholder func(ctx context.Context, placeholderName string) ([]string, error)
-
-	count   func(ctx context.Context, gb GroupedByValues) (float64, error)
-	average func(ctx context.Context, gb GroupedByValues, value float64) (float64, error)
-	sum     func(ctx context.Context, gb GroupedByValues, value float64) (float64, error)
-	// TODO: support the other aggregation functions
-}
-
-// GroupedByValues contains the fields that uniquely identify a distinct aggregation statistic.
-// Think of it like a ratelimit key.
-//
-// For example, if a Sigma rule has a condition like this (attempting to detect login brute forcing)
-//
-// detection:
-//   login_attempt:
-//     # something here
-//   condition:
-//     login_attempt | count() by (username) > 100
-//	 timeframe: 1m
-//
-// Conceptually there's a bunch of boxes somewhere (one for each username) containing their current count.
-// Each different GroupedByValues points to a different box.
-//
-// GroupedByValues
-//      ||
-//   ___↓↓___          ________
-//  | User A |        | User B |
-//  |__2041__|        |___01___|
-//
-// It's up to your implementation to ensure that different GroupedByValues map to different boxes
-// (although a default Key() method is provided which is good enough for most use cases)
-type GroupedByValues struct {
-	ConditionID int // TODO: there's some forward/backward compatibility pitfalls here: what happens if you switch the order of conditions in your Sigma file?
-	EventValues map[string]interface{}
-}
-
-func (a GroupedByValues) Key() string {
-	// This is lazy and a terrible idea as the JSON output shouldn't be relied on to be stable across Go releases
-	out, err := json.Marshal(map[string]interface{}{
-		"condition_id": a.ConditionID,
-		"event_values": a.EventValues,
-	})
-	if err != nil {
-		panic(err)
-	}
-	return string(out)
 }
 
 func ForRule(rule sigma.Rule, options ...Option) *RuleEvaluator {
@@ -73,118 +27,72 @@ func ForRule(rule sigma.Rule, options ...Option) *RuleEvaluator {
 }
 
 type Result struct {
-	Match            bool            // whether this event matches the Sigma rule
-	SearchResults    map[string]bool // For each Search, whether it matched the event
-	ConditionResults []bool          // For each Condition, whether it matched the event
+	SearchResults      map[string][]string
+	ConditionResults   map[int][]string
+	AggregationResults map[int]string
+	QueryResults       map[int]string
 }
 
-// Event should be some form a map[string]interface{} or map[string]string
-type Event interface{}
-
-func eventValue(e Event, key string) interface{} {
-	switch evt := e.(type) {
-	case map[string]string:
-		return evt[key]
-	case map[string]interface{}:
-		return evt[key]
-	default:
-		return ""
-	}
-}
-
-func (rule RuleEvaluator) Matches(ctx context.Context, event Event) (Result, error) {
+func (rule RuleEvaluator) Alters(ctx context.Context) (Result, error) {
 	result := Result{
-		Match:            false,
-		SearchResults:    map[string]bool{},
-		ConditionResults: make([]bool, len(rule.Detection.Conditions)),
+		SearchResults:      make(map[string][]string),
+		ConditionResults:   make(map[int][]string),
+		AggregationResults: make(map[int]string),
+		QueryResults:       make(map[int]string),
 	}
 	for identifier, search := range rule.Detection.Searches {
 		var err error
-		result.SearchResults[identifier], err = rule.evaluateSearch(ctx, search, event)
+		result.SearchResults[identifier], err = rule.evaluateSearch(ctx, search)
 		if err != nil {
 			return Result{}, fmt.Errorf("error evaluating search %s: %w", identifier, err)
 		}
 	}
 
 	for conditionIndex, condition := range rule.Detection.Conditions {
-		searchMatches := rule.evaluateSearchExpression(condition.Search, result.SearchResults)
-
-		switch {
-		// Event didn't match filters
-		case !searchMatches:
-			result.ConditionResults[conditionIndex] = false
-			continue
-
-		// Simple query without any aggregation
-		case searchMatches && condition.Aggregation == nil:
-			result.ConditionResults[conditionIndex] = true
-			result.Match = true
-			continue // need to continue in case other conditions contain aggregations that need to be evaluated
-
-		// Search expression matched but still need to see if the aggregation returns true
-		case searchMatches && condition.Aggregation != nil:
-			aggregationMatches, err := rule.evaluateAggregationExpression(ctx, conditionIndex, condition.Aggregation, event)
+		result.ConditionResults[conditionIndex] = rule.evaluateSearchExpression(condition.Search, []string{}, true)
+		if condition.Aggregation != nil {
+			var err error
+			result.AggregationResults[conditionIndex], err = rule.evaluateAggregationExpression(ctx, conditionIndex, condition.Aggregation)
 			if err != nil {
 				return Result{}, err
 			}
-			if aggregationMatches {
-				result.Match = true
-				result.ConditionResults[conditionIndex] = true
-			}
-			continue
 		}
 	}
-
-	return result, nil
-}
-
-type ResultAlters struct {
-	SearchResults    map[string][]string // For each Search, whether it matched the event
-	ConditionResults map[int][]string    // For each Condition, whether it matched the event
-}
-
-func (rule RuleEvaluator) Alters(ctx context.Context) (ResultAlters, error) {
-	result := ResultAlters{
-		SearchResults:    make(map[string][]string),
-		ConditionResults: make(map[int][]string),
-	}
-	for identifier, search := range rule.Detection.Searches {
-		var err error
-		result.SearchResults[identifier], err = rule.evaluateSearchAlters(ctx, search)
-		if err != nil {
-			return ResultAlters{}, fmt.Errorf("error evaluating search %s: %w", identifier, err)
-		}
-	}
-	for conditionIndex, condition := range rule.Detection.Conditions {
-		result.ConditionResults[conditionIndex] = rule.evaluateSearchExpressionAlters(condition.Search, []string{}, true)
-	}
-
-	newConditionsList := make([]string, 0, len(result.ConditionResults))
-	for i, conditions := range result.ConditionResults {
-		newConditions := make([]string, 0, len(conditions))
-		for _, c := range conditions {
-			if v, ok := result.SearchResults[c]; ok {
-				// condition result'ta olan bir key ise
-				if len(v) > 1 {
-					newConditions = append(newConditions, "("+strings.Join(v, " and ")+")")
+	for i, conditionResult := range result.ConditionResults {
+		conditionList := make([]string, 0, len(conditionResult))
+		for _, condition := range conditionResult {
+			if value, ok := result.SearchResults[condition]; ok {
+				if len(value) > 1 {
+					conditionList = append(conditionList, "("+strings.Join(value, " and ")+")")
 				} else {
-					newConditions = append(newConditions, strings.Join(v, ""))
+					conditionList = append(conditionList, strings.Join(value, ""))
 				}
 
 			} else {
-				newConditions = append(newConditions, c)
+				conditionList = append(conditionList, condition)
 			}
 		}
-		if i > 0 {
-			newConditionsList = append(newConditionsList, "or")
-		}
-		if len(result.ConditionResults) > 1 {
-			newConditionsList = append(newConditionsList, "("+strings.Join(newConditions, " ")+")")
+		if result.AggregationResults[i] != "" {
+			aggregationResult := strings.Split(result.AggregationResults[i], "|")
+			for j, aggregation := range aggregationResult {
+				if j == 0 {
+					result.QueryResults[i] = aggregation + " where " + strings.Join(conditionList, " ")
+				} else {
+					result.QueryResults[i] += " " + aggregation
+				}
+			}
 		} else {
-			newConditionsList = append(newConditionsList, strings.Join(newConditions, " "))
+			result.QueryResults[i] = "where " + strings.Join(conditionList, " ")
+		}
+		if rule.Logsource.Product != "" && rule.Logsource.Service != "" {
+			result.QueryResults[i] = fmt.Sprintf("sourcetype='%v' %v", rule.Logsource.Product+"-"+rule.Logsource.Service, result.QueryResults[i])
+		} else if rule.Logsource.Product != "" && rule.Logsource.Service == "" {
+			result.QueryResults[i] = fmt.Sprintf("sourcetype='%v' %v", rule.Logsource.Product+"-*", result.QueryResults[i])
 		}
 	}
-	fmt.Printf("newConditionsList: %+q\n", strings.Join(newConditionsList, " "))
 
+	for _, queryResult := range result.QueryResults {
+		fmt.Printf("%v\n", queryResult)
+	}
 	return result, nil
 }

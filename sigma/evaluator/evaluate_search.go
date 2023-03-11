@@ -2,50 +2,64 @@ package evaluator
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path"
 	"reflect"
-	"regexp"
 	"strings"
 
 	"Alterix/sigma"
-
-	"github.com/PaesslerAG/jsonpath"
 )
 
-func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, searchResults map[string]bool) bool {
+func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, conditionResult []string, isTopLevel bool) []string {
 	switch s := search.(type) {
 	case sigma.And:
-		for _, node := range s {
-			if !rule.evaluateSearchExpression(node, searchResults) {
-				return false
-			}
+		if !isTopLevel && len(s) > 1 {
+			conditionResult = append(conditionResult, "(")
 		}
-		return true
+		for i, node := range s {
+			if i > 0 {
+				conditionResult = append(conditionResult, "and")
+			}
+			conditionResult = rule.evaluateSearchExpression(node, conditionResult, false)
+		}
+		if !isTopLevel && len(s) > 1 {
+			conditionResult = append(conditionResult, ")")
+		}
+		return conditionResult
 
 	case sigma.Or:
-		for _, node := range s {
-			if rule.evaluateSearchExpression(node, searchResults) {
-				return true
-			}
+		if !isTopLevel && len(s) > 1 {
+			conditionResult = append(conditionResult, "(")
 		}
-		return false
+		for i, node := range s {
+			if i > 0 {
+				conditionResult = append(conditionResult, "or")
+			}
+			conditionResult = rule.evaluateSearchExpression(node, conditionResult, false)
+		}
+		if !isTopLevel && len(s) > 1 {
+			conditionResult = append(conditionResult, ")")
+		}
+		return conditionResult
 
 	case sigma.Not:
-		return !rule.evaluateSearchExpression(s.Expr, searchResults)
+		conditionResult = append(conditionResult, "not")
+		conditionResult = rule.evaluateSearchExpression(s.Expr, conditionResult, false)
+		return conditionResult
 
 	case sigma.SearchIdentifier:
 		// If `s.Name` is not defined, this is always false
-		return searchResults[s.Name]
+		conditionResult = append(conditionResult, s.Name)
+		return conditionResult
 
 	case sigma.OneOfThem:
 		for name := range rule.Detection.Searches {
-			if rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, searchResults) {
-				return true
+			if len(conditionResult) > 0 {
+				conditionResult = append(conditionResult, "or")
 			}
+			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
 		}
-		return false
+		return conditionResult
 
 	case sigma.OneOfPattern:
 		for name := range rule.Detection.Searches {
@@ -54,19 +68,21 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, sear
 			if !matchesPattern {
 				continue
 			}
-			if rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, searchResults) {
-				return true
+			if len(conditionResult) > 0 {
+				conditionResult = append(conditionResult, "or")
 			}
+			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
 		}
-		return false
+		return conditionResult
 
 	case sigma.AllOfThem:
 		for name := range rule.Detection.Searches {
-			if !rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, searchResults) {
-				return false
+			if len(conditionResult) > 0 {
+				conditionResult = append(conditionResult, "and")
 			}
+			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
 		}
-		return true
+		return conditionResult
 
 	case sigma.AllOfPattern:
 		for name := range rule.Detection.Searches {
@@ -75,162 +91,17 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, sear
 			if !matchesPattern {
 				continue
 			}
-			if !rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, searchResults) {
-				return false
+			if len(conditionResult) > 0 {
+				conditionResult = append(conditionResult, "and")
 			}
+			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
 		}
-		return true
+		return conditionResult
 	}
 	panic(fmt.Sprintf("unhandled node type %T", search))
 }
 
-func (rule RuleEvaluator) evaluateSearchExpressionAlters(search sigma.SearchExpr, condition []string, isTopLevel bool) []string {
-	switch s := search.(type) {
-	case sigma.And:
-		if !isTopLevel && len(s) > 1 {
-			condition = append(condition, "(")
-		}
-		for i, node := range s {
-			if i > 0 {
-				condition = append(condition, "and")
-			}
-			condition = rule.evaluateSearchExpressionAlters(node, condition, false)
-		}
-		if !isTopLevel && len(s) > 1 {
-			condition = append(condition, ")")
-		}
-		return condition
-
-	case sigma.Or:
-		if !isTopLevel && len(s) > 1 {
-			condition = append(condition, "(")
-		}
-		for i, node := range s {
-			if i > 0 {
-				condition = append(condition, "or")
-			}
-			condition = rule.evaluateSearchExpressionAlters(node, condition, false)
-		}
-		if !isTopLevel && len(s) > 1 {
-			condition = append(condition, ")")
-		}
-		return condition
-
-	case sigma.Not:
-		condition = append(condition, "not")
-		condition = rule.evaluateSearchExpressionAlters(s.Expr, condition, false)
-		return condition
-
-	case sigma.SearchIdentifier:
-		// If `s.Name` is not defined, this is always false
-		condition = append(condition, s.Name)
-		return condition
-
-	case sigma.OneOfThem:
-		for name := range rule.Detection.Searches {
-			if len(condition) > 0 {
-				condition = append(condition, "or")
-			}
-			condition = rule.evaluateSearchExpressionAlters(sigma.SearchIdentifier{Name: name}, condition, false)
-		}
-		return condition
-
-	case sigma.OneOfPattern:
-		for name := range rule.Detection.Searches {
-			// it's not possible for this call to error because the search expression parser won't allow this to contain invalid expressions
-			matchesPattern, _ := path.Match(s.Pattern, name)
-			if !matchesPattern {
-				continue
-			}
-			if len(condition) > 0 {
-				condition = append(condition, "or")
-			}
-			condition = rule.evaluateSearchExpressionAlters(sigma.SearchIdentifier{Name: name}, condition, false)
-		}
-		return condition
-
-	case sigma.AllOfThem:
-		for name := range rule.Detection.Searches {
-			if len(condition) > 0 {
-				condition = append(condition, "and")
-			}
-			condition = rule.evaluateSearchExpressionAlters(sigma.SearchIdentifier{Name: name}, condition, false)
-		}
-		return condition
-
-	case sigma.AllOfPattern:
-		for name := range rule.Detection.Searches {
-			// it's not possible for this call to error because the search expression parser won't allow this to contain invalid expressions
-			matchesPattern, _ := path.Match(s.Pattern, name)
-			if !matchesPattern {
-				continue
-			}
-			if len(condition) > 0 {
-				condition = append(condition, "and")
-			}
-			condition = rule.evaluateSearchExpressionAlters(sigma.SearchIdentifier{Name: name}, condition, false)
-		}
-		return condition
-	}
-	panic(fmt.Sprintf("unhandled node type %T", search))
-}
-
-func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Search, event Event) (bool, error) {
-	if len(search.Keywords) > 0 {
-		return false, fmt.Errorf("keywords unsupported")
-	}
-
-	if len(search.EventMatchers) == 0 {
-		// degenerate case (but common for logsource conditions)
-		return true, nil
-	}
-
-	// A Search is a series of EventMatchers (usually one)
-	// Each EventMatchers is a series of "does this field match this value" conditions
-	// all fields need to match for an EventMatcher to match, but only one EventMatcher needs to match for the Search to evaluate to true
-eventMatcher:
-	for _, eventMatcher := range search.EventMatchers {
-		for _, fieldMatcher := range eventMatcher {
-			// A field matcher can specify multiple values to match against
-			// either the field should match all of these values or it should match any of them
-			allValuesMustMatch := false
-			fieldModifiers := fieldMatcher.Modifiers
-			if len(fieldMatcher.Modifiers) > 0 && fieldModifiers[len(fieldModifiers)-1] == "all" {
-				allValuesMustMatch = true
-				fieldModifiers = fieldModifiers[:len(fieldModifiers)-1]
-			}
-
-			// field matchers can specify modifiers (FieldName|modifier1|modifier2) which change the matching behaviour
-			comparator := baseComparator
-			for _, name := range fieldModifiers {
-				if modifiers[name] == nil {
-					return false, fmt.Errorf("unsupported modifier %s", name)
-				}
-				comparator = modifiers[name](comparator)
-			}
-
-			matcherValues, err := rule.getMatcherValues(ctx, fieldMatcher)
-			if err != nil {
-				return false, err
-			}
-			values, err := rule.GetFieldValuesFromEvent(fieldMatcher.Field, event)
-			if err != nil {
-				return false, err
-			}
-			if !rule.matcherMatchesValues(matcherValues, comparator, allValuesMustMatch, values) {
-				// this field didn't match so the overall matcher doesn't match, try the next EventMatcher
-				continue eventMatcher
-			}
-		}
-
-		// all fields matched!
-		return true, nil
-	}
-
-	// None of the event matchers explicitly matched
-	return false, nil
-}
-func (rule RuleEvaluator) evaluateSearchAlters(ctx context.Context, search sigma.Search) ([]string, error) {
+func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Search) ([]string, error) {
 	var filters []string
 
 	if len(search.Keywords) > 0 {
@@ -238,12 +109,12 @@ func (rule RuleEvaluator) evaluateSearchAlters(ctx context.Context, search sigma
 	}
 
 	if len(search.EventMatchers) == 0 {
-		// degenerate case (but common for logsource conditions)
+		// degenerate case (but common for logsource conditionResults)
 		return filters, nil
 	}
 
 	// A Search is a series of EventMatchers (usually one)
-	// Each EventMatchers is a series of "does this field match this value" conditions
+	// Each EventMatchers is a series of "does this field match this value" conditionResults
 	// all fields need to match for an EventMatcher to match, but only one EventMatcher needs to match for the Search to evaluate to true
 	for _, eventMatcher := range search.EventMatchers {
 		for _, fieldMatcher := range eventMatcher {
@@ -314,34 +185,6 @@ func (rule *RuleEvaluator) getMatcherValues(ctx context.Context, matcher sigma.F
 	return matcherValues, nil
 }
 
-func (rule *RuleEvaluator) GetFieldValuesFromEvent(field string, event Event) ([]interface{}, error) {
-	// First collect this list of event values we're matching against
-	var actualValues []interface{}
-	if len(rule.fieldmappings[field]) == 0 {
-		// No FieldMapping exists so use the name directly from the rule
-		actualValues = []interface{}{eventValue(event, field)}
-	} else {
-		// FieldMapping does exist so check each of the possible mapped names instead of the name from the rule
-		for _, mapping := range rule.fieldmappings[field] {
-			var v interface{}
-			var err error
-
-			switch {
-			case strings.HasPrefix(mapping, "$.") || strings.HasPrefix(mapping, "$["):
-				v, err = evaluateJSONPath(mapping, event)
-			default:
-				v = eventValue(event, mapping)
-			}
-			if err != nil {
-				return nil, err
-			}
-
-			actualValues = append(actualValues, toGenericSlice(v)...)
-		}
-	}
-	return actualValues, nil
-}
-
 func (rule *RuleEvaluator) matcherMatchesValues(matcherValues []string, comparator valueComparator, allValuesMustMatch bool, actualValues []interface{}) bool {
 	matched := allValuesMustMatch
 	for _, expectedValue := range matcherValues {
@@ -391,61 +234,6 @@ func (rule *RuleEvaluator) matcherMatchesValuesAlters(matcherValues []string, fi
 	} else {
 		return strings.Join(filters, " ")
 	}
-}
-
-// This is a hack because none of the JSONPath libraries expose the parsed AST :(
-// Matches JSONPaths with either a $.fieldname or $["fieldname"] prefix and extracts 'fieldname'
-var firstJSONPathField = regexp.MustCompile(`^\$(?:[.]|\[")([a-zA-Z0-9_\-]+)(?:"])?`)
-
-func evaluateJSONPath(expr string, event Event) (interface{}, error) {
-	// First, just try to evaluate the JSONPath expression directly
-	value, err := jsonpath.Get(expr, event)
-	switch {
-	case err == nil:
-		// Got no error so return the value directly
-		return value, nil
-	case strings.HasPrefix(err.Error(), "unknown key "):
-		// This means we tried to access a nested field that wasn't present in the event.
-		// This is an expected situation which just results in returning no value (the same as if we were trying to access a top level field that didn't exist)
-		return nil, nil
-	case strings.HasPrefix(err.Error(), "unsupported value type"):
-		// handled below
-	default:
-		return nil, err
-	}
-
-	// Got an error: "unsupported value type X for select, expected map[string]interface{} or []interface{}"
-	// This means we tried to access a nested field that hasn't yet been unmarshalled.
-	// We try to fix this by finding the top-level field being selected and attempting to unmarshal it.
-	// This is best effort and only works for top-level fields.
-	// A longer term solution would be to either build this into the JSONPath library directly or remove this feature and let the user do it.
-
-	jsonPathField := firstJSONPathField.FindStringSubmatch(expr)
-	if jsonPathField == nil {
-		return nil, fmt.Errorf("couldn't parse JSONPath expression")
-	}
-
-	var subValue interface{}
-	switch e := event.(type) {
-	case map[string]string:
-		json.Unmarshal([]byte(e[jsonPathField[1]]), &subValue)
-	case map[string]interface{}:
-		switch sub := e[jsonPathField[1]].(type) {
-		case string:
-			json.Unmarshal([]byte(sub), &subValue)
-		case []byte:
-			json.Unmarshal(sub, &subValue)
-		default:
-			// Oh well, don't try to unmarshal the nested field
-			value, _ := jsonpath.Get(expr, event)
-			return value, nil
-		}
-	}
-
-	value, _ = jsonpath.Get(expr, map[string]interface{}{
-		jsonPathField[1]: subValue,
-	})
-	return value, nil
 }
 
 func toGenericSlice(v interface{}) []interface{} {

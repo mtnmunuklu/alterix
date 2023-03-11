@@ -2,7 +2,6 @@ package evaluator
 
 import (
 	"context"
-	"encoding/json"
 
 	"Alterix/sigma"
 )
@@ -45,13 +44,8 @@ func init() {
 
 // Run with: go-fuzz-build --preserve "encoding/json" && go-fuzz
 func FuzzRuleMatches(data []byte) int {
-	var event map[string]interface{}
-	if err := json.Unmarshal(data, &event); err != nil {
-		return -1
-	}
-
 	r := ForRule(rule, WithConfig(config))
-	_, err := r.Matches(context.Background(), data)
+	_, err := r.Alters(context.Background())
 	if err != nil {
 		return 0
 	}

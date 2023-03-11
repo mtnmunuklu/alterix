@@ -2,7 +2,6 @@ package evaluator_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -11,36 +10,49 @@ import (
 )
 
 const testRule = `
-title: Suspicious PsExec Execution - Zeek
-id: f1b3a22a-45e6-4004-afb5-4291f9c21166
-related:
-  - id: c462f537-a1e3-41a6-b5fc-b2c2cef9bf82
-    type: derived
+title: Chafer Activity
+id: ce6e34ca-966d-41c9-8d93-5b06c8b97a06
+#related:
+#  - id: 53ba33fd-3a50-4468-a5ef-c583635cfa92
+#    type: derived
+description: Detects Chafer activity attributed to OilRig as reported in Nyotron report in March 2018
 status: test
-description: detects execution of psexec or paexec with renamed service name, this rule helps to filter out the noise if psexec is used for legit purposes or if attacker uses a different psexec client other than sysinternal one
 references:
-  - https://blog.menasec.net/2019/02/threat-hunting-3-detecting-psexec.html
-author: Samir Bousseaden, @neu5ron, Tim Shelton
-date: 2020/04/02
-modified: 2022/12/27
+  - https://nyotron.com/nyotron-discovers-next-generation-oilrig-attacks/
 tags:
-  - attack.lateral_movement
-  - attack.t1021.002
+  - attack.persistence
+  - attack.g0049
+  - attack.t1053.005
+  - attack.s0111
+  - attack.t1543.003
+  - attack.defense_evasion
+  - attack.t1112
+  - attack.command_and_control
+  - attack.t1071.004
+date: 2018/03/23
+modified: 2021/09/19
+author: Florian Roth, Markus Neis, Jonhnathan Ribeiro, Daniil Yugoslavskiy, oscd.community
 logsource:
-  product: zeek
-  service: smb_files
+  category: process_creation
+  product: windows
 detection:
-  selection:
-    path|contains|all:
-      - '\\'
-      - '\IPC$'
-    name|endswith:
-      - '-stdin'
-      - '-stdout'
-      - '-stderr'
-  filter:
-    name|startswith: 'PSEXESVC'
-  condition: selection and not filter
+  selection_process0:
+    CommandLine|contains: '\Service.exe'
+    CommandLine|endswith:
+      - 'i'
+      - 'u'
+  selection_process1:
+    - CommandLine|endswith: '\microsoft\Taskbar\autoit3.exe'
+    - CommandLine|startswith: 'C:\wsc.exe'
+  selection_process2:
+    Image|contains: '\Windows\Temp\DB\'
+    Image|endswith: '.exe'
+  selection_process3:
+    CommandLine|contains|all:
+      - '\nslookup.exe'
+      - '-q=TXT'
+    ParentImage|contains: '\Autoit'
+  condition: 1 of selection* | count(Image) by CommandLine > 5
 falsepositives:
   - Unknown
 level: high
@@ -55,8 +67,6 @@ logsources:
   process_creation:
     category: process_creation
     product: windows
-    conditions:
-      EventID: 1
     rewrite:
       product: windows
       service: sysmon
@@ -131,105 +141,6 @@ fieldmappings:
   CommandLine: command
   Image: sproc
 `
-
-const testEvent = `
-{
-	"foo": "foobarbaz",
-	"foobar": {
-		"baz": "baz"
-	},
-
-	"comment": "// random JSON from json-generator.com for more realistic payload size",
-    "_id": "60d0b4610f3d918f1790f96a",
-    "index": 0,
-    "guid": "7d9e0be8-a58c-4295-9716-95828f02c464",
-    "isActive": true,
-    "balance": "$2,710.89",
-    "picture": "http://placehold.it/32x32",
-    "age": 40,
-    "eyeColor": "blue",
-    "name": "Althea Gonzalez",
-    "gender": "female",
-    "company": "EXOTERIC",
-    "email": "altheagonzalez@exoteric.com",
-    "phone": "+1 (890) 600-3120",
-    "address": "482 Highland Avenue, Garfield, Northern Mariana Islands, 2968",
-    "about": "Aliqua culpa proident deserunt dolor sint non. Ea exercitation duis eu elit. Laborum exercitation reprehenderit velit eu eu occaecat duis. Id qui veniam ea sint fugiat do occaecat ut duis laboris.\r\n",
-    "registered": "2019-07-16T01:45:06 -01:00",
-    "latitude": -8.51841,
-    "longitude": 133.547791,
-    "tags": [
-      "quis",
-      "duis",
-      "in",
-      "fugiat",
-      "laborum",
-      "incididunt",
-      "elit"
-    ],
-    "friends": [
-      {
-        "id": 0,
-        "name": "Ursula Velez"
-      },
-      {
-        "id": 1,
-        "name": "Cecelia Alvarado"
-      },
-      {
-        "id": 2,
-        "name": "Mooney Mullen"
-      }
-    ],
-    "greeting": "Hello, Althea Gonzalez! You have 7 unread messages.",
-    "favoriteFruit": "apple"
-}
-`
-
-func BenchmarkRuleEvaluator_Matches(b *testing.B) {
-	rule, err := sigma.ParseRule([]byte(testRule))
-	if err != nil {
-		b.Fatal(err)
-	}
-	config, err := sigma.ParseConfig([]byte(testConfig))
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	r := evaluator.ForRule(rule, evaluator.WithConfig(config))
-	ctx := context.Background()
-
-	b.Run("DecodeAndMatch", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			var event map[string]interface{}
-			if err := json.Unmarshal([]byte(testEvent), &event); err != nil {
-				b.Fatal(err)
-			}
-			result, err := r.Matches(ctx, event)
-			if err != nil {
-				b.Fatal(err)
-			}
-			if !result.Match {
-				b.Fatal("event should have matched")
-			}
-		}
-	})
-	b.Run("JustMatch", func(b *testing.B) {
-		var event map[string]interface{}
-		if err := json.Unmarshal([]byte(testEvent), &event); err != nil {
-			b.Fatal(err)
-		}
-		for i := 0; i < b.N; i++ {
-			result, err := r.Matches(ctx, event)
-			if err != nil {
-				b.Fatal(err)
-			}
-			if !result.Match {
-				b.Fatal("event should have matched")
-			}
-		}
-	})
-}
 
 func BenchmarkRuleEvaluator_Alters(b *testing.B) {
 	rule, err := sigma.ParseRule([]byte(testRule))

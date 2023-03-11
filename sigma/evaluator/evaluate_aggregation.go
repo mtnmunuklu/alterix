@@ -3,88 +3,111 @@ package evaluator
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"Alterix/sigma"
 )
 
-func (rule RuleEvaluator) evaluateAggregationExpression(ctx context.Context, conditionIndex int, aggregation sigma.AggregationExpr, event Event) (bool, error) {
+func (rule RuleEvaluator) evaluateAggregationExpression(ctx context.Context, conditionIndex int, aggregation sigma.AggregationExpr) (string, error) {
+	var aggregationResult string
 	switch agg := aggregation.(type) {
 	case sigma.Near:
-		return false, fmt.Errorf("near isn't supported yet")
+		return aggregationResult, fmt.Errorf("near isn't supported yet")
 
 	case sigma.Comparison:
-		aggregationValue, err := rule.evaluateAggregationFunc(ctx, conditionIndex, agg.Func, event)
+		aggregationResult, err := rule.evaluateAggregationFunc(ctx, conditionIndex, agg.Func)
 		if err != nil {
-			return false, err
-		}
-		switch agg.Op {
-		case sigma.Equal:
-			return aggregationValue == agg.Threshold, nil
-		case sigma.NotEqual:
-			return aggregationValue != agg.Threshold, nil
-		case sigma.LessThan:
-			return aggregationValue < agg.Threshold, nil
-		case sigma.LessThanEqual:
-			return aggregationValue <= agg.Threshold, nil
-		case sigma.GreaterThan:
-			return aggregationValue > agg.Threshold, nil
-		case sigma.GreaterThanEqual:
-			return aggregationValue >= agg.Threshold, nil
-		default:
-			return false, fmt.Errorf("unsupported comparison operation %v", agg.Op)
+			return aggregationResult, err
 		}
 
+		return aggregationResult + " " + string(agg.Op) + " " + fmt.Sprintf("%d", int(agg.Threshold)), nil
+
 	default:
-		return false, fmt.Errorf("unknown aggregation expression")
+		return aggregationResult, fmt.Errorf("unknown aggregation expression")
 	}
 }
 
-func (rule RuleEvaluator) evaluateAggregationFunc(ctx context.Context, conditionIndex int, aggregation sigma.AggregationFunc, event Event) (float64, error) {
+func (rule RuleEvaluator) evaluateAggregationFunc(ctx context.Context, conditionIndex int, aggregation sigma.AggregationFunc) (string, error) {
+	var result string
 	switch agg := aggregation.(type) {
 	case sigma.Count:
 		if agg.Field == "" {
-			// This is a simple count number of events
-			return rule.count(ctx, GroupedByValues{
-				ConditionID: conditionIndex,
-				EventValues: map[string]interface{}{
-					// TODO: it's out of spec but would be very useful to support multiple group-by fields.
-					agg.GroupedBy: eventValue(event, agg.GroupedBy),
-				},
-			})
+			if agg.GroupedBy != "" {
+				result = "select " + agg.GroupedBy
+			}
+			result += ", count(*)|group having count(*)"
+			return result, nil
 		} else {
-			// This is a more complex, count distinct values for a field
-			// TODO: implement this
-			return 0, fmt.Errorf("count_distinct not yet implemented")
+			if len(rule.fieldmappings[agg.Field]) != 0 {
+				agg.Field = rule.fieldmappings[agg.Field][0]
+			}
+			result = "select " + agg.Field
+			if agg.GroupedBy != "" {
+				if len(rule.fieldmappings[agg.GroupedBy]) != 0 {
+					agg.GroupedBy = rule.fieldmappings[agg.GroupedBy][0]
+				}
+				result += ", " + agg.GroupedBy
+			}
+			result += ", count(*)|group having count(*)"
+			return result, nil
 		}
 
 	case sigma.Average:
-		val, err := strconv.ParseFloat(fmt.Sprint(eventValue(event, agg.Field)), 64)
-		if err != nil {
-			return 0, fmt.Errorf("invalid float value: %w", err)
+		if len(rule.fieldmappings[agg.Field]) != 0 {
+			agg.Field = rule.fieldmappings[agg.Field][0]
 		}
-		return rule.average(ctx, GroupedByValues{
-			ConditionID: conditionIndex,
-			EventValues: map[string]interface{}{
-				// TODO: it's out of spec but would be very useful to support multiple group-by fields.
-				agg.GroupedBy: eventValue(event, agg.GroupedBy),
-			},
-		}, val)
+		result = "select " + agg.Field
+		if agg.GroupedBy != "" {
+			if len(rule.fieldmappings[agg.GroupedBy]) != 0 {
+				agg.GroupedBy = rule.fieldmappings[agg.GroupedBy][0]
+			}
+			result += ", " + agg.GroupedBy
+		}
+		result += ", avg(" + agg.Field + ")|group having avg(" + agg.Field + ")"
+		return result, nil
 
 	case sigma.Sum:
-		val, err := strconv.ParseFloat(fmt.Sprint(eventValue(event, agg.Field)), 64)
-		if err != nil {
-			return 0, fmt.Errorf("invalid float value: %w", err)
+		if len(rule.fieldmappings[agg.Field]) != 0 {
+			agg.Field = rule.fieldmappings[agg.Field][0]
 		}
-		return rule.sum(ctx, GroupedByValues{
-			ConditionID: conditionIndex,
-			EventValues: map[string]interface{}{
-				// TODO: it's out of spec but would be very useful to support multiple group-by fields.
-				agg.GroupedBy: eventValue(event, agg.GroupedBy),
-			},
-		}, val)
+		result = "select " + agg.Field
+		if agg.GroupedBy != "" {
+			if len(rule.fieldmappings[agg.GroupedBy]) != 0 {
+				agg.GroupedBy = rule.fieldmappings[agg.GroupedBy][0]
+			}
+			result += ", " + agg.GroupedBy
+		}
+		result += ", sum(" + agg.Field + ")|group having sum(" + agg.Field + ")"
+		return result, nil
+
+	case sigma.Min:
+		if len(rule.fieldmappings[agg.Field]) != 0 {
+			agg.Field = rule.fieldmappings[agg.Field][0]
+		}
+		result = "select " + agg.Field
+		if agg.GroupedBy != "" {
+			if len(rule.fieldmappings[agg.GroupedBy]) != 0 {
+				agg.GroupedBy = rule.fieldmappings[agg.GroupedBy][0]
+			}
+			result += ", " + agg.GroupedBy
+		}
+		result += ", min(" + agg.Field + ")|group having min(" + agg.Field + ")"
+		return result, nil
+
+	case sigma.Max:
+		if len(rule.fieldmappings[agg.Field]) != 0 {
+			agg.Field = rule.fieldmappings[agg.Field][0]
+		}
+		result = "select " + agg.Field
+		if agg.GroupedBy != "" {
+			if len(rule.fieldmappings[agg.GroupedBy]) != 0 {
+				agg.GroupedBy = rule.fieldmappings[agg.GroupedBy][0]
+			}
+			result += ", " + agg.GroupedBy
+		}
+		result += ", max(" + agg.Field + ")|group having max(" + agg.Field + ")"
+		return result, nil
 
 	default:
-		return 0, fmt.Errorf("unsupported aggregation function")
+		return result, fmt.Errorf("unsupported aggregation function")
 	}
 }
