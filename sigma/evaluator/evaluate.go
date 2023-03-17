@@ -76,13 +76,13 @@ func (rule RuleEvaluator) Alters(ctx context.Context) (Result, error) {
 			aggregationResult := strings.Split(result.AggregationResults[i], "|")
 			for j, aggregation := range aggregationResult {
 				if j == 0 {
-					result.QueryResults[i] = aggregation + " where " + strings.Join(conditionList, " ")
+					result.QueryResults[i] = aggregation + " where " + strings.Join(conditionList, "")
 				} else {
 					result.QueryResults[i] += " " + aggregation
 				}
 			}
 		} else {
-			result.QueryResults[i] = "where " + strings.Join(conditionList, " ")
+			result.QueryResults[i] = "where " + strings.Join(conditionList, "")
 		}
 		if rule.Logsource.Product != "" && rule.Logsource.Service != "" {
 			result.QueryResults[i] = fmt.Sprintf("sourcetype='%v' %v", rule.Logsource.Product+"-"+rule.Logsource.Service, result.QueryResults[i])
@@ -91,8 +91,5 @@ func (rule RuleEvaluator) Alters(ctx context.Context) (Result, error) {
 		}
 	}
 
-	for _, queryResult := range result.QueryResults {
-		fmt.Printf("%v\n", queryResult)
-	}
 	return result, nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"reflect"
 	"strings"
 
 	"Alterix/sigma"
@@ -18,7 +17,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 		}
 		for i, node := range s {
 			if i > 0 {
-				conditionResult = append(conditionResult, "and")
+				conditionResult = append(conditionResult, " and ")
 			}
 			conditionResult = rule.evaluateSearchExpression(node, conditionResult, false)
 		}
@@ -33,7 +32,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 		}
 		for i, node := range s {
 			if i > 0 {
-				conditionResult = append(conditionResult, "or")
+				conditionResult = append(conditionResult, " or ")
 			}
 			conditionResult = rule.evaluateSearchExpression(node, conditionResult, false)
 		}
@@ -43,7 +42,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 		return conditionResult
 
 	case sigma.Not:
-		conditionResult = append(conditionResult, "not")
+		conditionResult = append(conditionResult, " not ")
 		conditionResult = rule.evaluateSearchExpression(s.Expr, conditionResult, false)
 		return conditionResult
 
@@ -55,7 +54,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 	case sigma.OneOfThem:
 		for name := range rule.Detection.Searches {
 			if len(conditionResult) > 0 {
-				conditionResult = append(conditionResult, "or")
+				conditionResult = append(conditionResult, " or ")
 			}
 			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
 		}
@@ -69,7 +68,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 				continue
 			}
 			if len(conditionResult) > 0 {
-				conditionResult = append(conditionResult, "or")
+				conditionResult = append(conditionResult, " or ")
 			}
 			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
 		}
@@ -78,7 +77,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 	case sigma.AllOfThem:
 		for name := range rule.Detection.Searches {
 			if len(conditionResult) > 0 {
-				conditionResult = append(conditionResult, "and")
+				conditionResult = append(conditionResult, " and ")
 			}
 			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
 		}
@@ -92,7 +91,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 				continue
 			}
 			if len(conditionResult) > 0 {
-				conditionResult = append(conditionResult, "and")
+				conditionResult = append(conditionResult, " and ")
 			}
 			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
 		}
@@ -128,12 +127,12 @@ func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Searc
 			}
 
 			// field matchers can specify modifiers (FieldName|modifier1|modifier2) which change the matching behaviour
-			comparator := baseComparatorAlters
+			comparator := baseComparator
 			for _, name := range fieldModifiers {
 				if modifiers[name] == nil {
 					return filters, fmt.Errorf("unsupported modifier %s", name)
 				}
-				comparator = modifiersAlters[name](comparator)
+				comparator = modifiers[name](comparator)
 			}
 
 			matcherValues, err := rule.getMatcherValues(ctx, fieldMatcher)
@@ -143,9 +142,9 @@ func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Searc
 			var filter string
 			if len(rule.fieldmappings[fieldMatcher.Field]) == 0 {
 
-				filter = rule.matcherMatchesValuesAlters(matcherValues, []string{fieldMatcher.Field}, comparator, allValuesMustMatch)
+				filter = rule.matcherMatchesValues(matcherValues, []string{fieldMatcher.Field}, comparator, allValuesMustMatch)
 			} else {
-				filter = rule.matcherMatchesValuesAlters(matcherValues, rule.fieldmappings[fieldMatcher.Field], comparator, allValuesMustMatch)
+				filter = rule.matcherMatchesValues(matcherValues, rule.fieldmappings[fieldMatcher.Field], comparator, allValuesMustMatch)
 			}
 			filters = append(filters, filter)
 		}
@@ -185,28 +184,7 @@ func (rule *RuleEvaluator) getMatcherValues(ctx context.Context, matcher sigma.F
 	return matcherValues, nil
 }
 
-func (rule *RuleEvaluator) matcherMatchesValues(matcherValues []string, comparator valueComparator, allValuesMustMatch bool, actualValues []interface{}) bool {
-	matched := allValuesMustMatch
-	for _, expectedValue := range matcherValues {
-		valueMatchedEvent := false
-		// There are multiple possible event fields that each expected value needs to be compared against
-		for _, actualValue := range actualValues {
-			if comparator(actualValue, expectedValue) {
-				valueMatchedEvent = true
-				break
-			}
-		}
-
-		if allValuesMustMatch {
-			matched = matched && valueMatchedEvent
-		} else {
-			matched = matched || valueMatchedEvent
-		}
-	}
-	return matched
-}
-
-func (rule *RuleEvaluator) matcherMatchesValuesAlters(matcherValues []string, fields []string, comparator valueComparatorAlters, allValuesMustMatch bool) string {
+func (rule *RuleEvaluator) matcherMatchesValues(matcherValues []string, fields []string, comparator valueComparator, allValuesMustMatch bool) string {
 	var filters []string
 	for i, field := range fields {
 		var subFilters []string
@@ -215,40 +193,23 @@ func (rule *RuleEvaluator) matcherMatchesValuesAlters(matcherValues []string, fi
 			if j == 0 {
 				subFilters = append(subFilters, filter)
 			} else if allValuesMustMatch {
-				subFilters = append(subFilters, "and", filter)
+				subFilters = append(subFilters, " and ", filter)
 			} else {
-				subFilters = append(subFilters, "or", filter)
+				subFilters = append(subFilters, " or ", filter)
 			}
 		}
 		if len(matcherValues) > 1 {
-			filters = append(filters, "("+strings.Join(subFilters, " ")+")")
+			filters = append(filters, "("+strings.Join(subFilters, "")+")")
 		} else {
 			filters = append(filters, subFilters...)
 		}
 		if i < len(fields)-1 {
-			filters = append(filters, "or")
+			filters = append(filters, " or ")
 		}
 	}
 	if len(fields) > 1 {
-		return "(" + strings.Join(filters, " ") + ")"
+		return "(" + strings.Join(filters, "") + ")"
 	} else {
-		return strings.Join(filters, " ")
+		return strings.Join(filters, "")
 	}
-}
-
-func toGenericSlice(v interface{}) []interface{} {
-	rv := reflect.ValueOf(v)
-
-	// if this isn't a slice, then return a slice containing the
-	// original value
-	if rv.Kind() != reflect.Slice {
-		return []interface{}{v}
-	}
-
-	var out []interface{}
-	for i := 0; i < rv.Len(); i++ {
-		out = append(out, rv.Index(i).Interface())
-	}
-
-	return out
 }
