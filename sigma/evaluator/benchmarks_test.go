@@ -142,25 +142,40 @@ fieldmappings:
   Image: sproc
 `
 
+// BenchmarkRuleEvaluator_Alters is a benchmarking function for the RuleEvaluator.Alters method
 func BenchmarkRuleEvaluator_Alters(b *testing.B) {
+
+	// Parse the test rule
 	rule, err := sigma.ParseRule([]byte(testRule))
 	if err != nil {
 		b.Fatal(err)
 	}
+
+	// Parse the test config
 	config, err := sigma.ParseConfig([]byte(testConfig))
 	if err != nil {
 		b.Fatal(err)
 	}
 
+	// Create a RuleEvaluator for the given rule and config
 	r := evaluator.ForRule(rule, evaluator.WithConfig(config))
+
+	// Create a context
 	ctx := context.Background()
 
+	// Run a benchmark for the JustMatch case
 	b.Run("JustMatch", func(b *testing.B) {
+
+		// Run the benchmark b.N times
 		for i := 0; i < b.N; i++ {
+
+			// Evaluate the rule using the RuleEvaluator.Alters method
 			result, err := r.Alters(ctx)
 			if err != nil {
 				b.Fatal(err)
 			}
+
+			// Print the result for debugging purposes
 			fmt.Printf("result: %v\n", result)
 		}
 	})

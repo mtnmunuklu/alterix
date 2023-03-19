@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	// Define a lexer that matches the different parts of the Sigma condition syntax
 	searchExprLexer = lexer.Must(lexer.Regexp(`(?P<Keyword>(?i)(1 of them)|(all of them)|(1 of)|(all of))` +
 		`|(?P<SearchIdentifierPattern>\*?[a-zA-Z_]+\*[a-zA-Z0-9_*]*)` +
 		`|(?P<SearchIdentifier>[a-zA-Z_][a-zA-Z0-9_]*)` +
@@ -18,20 +19,23 @@ var (
 		`|(\s+)`,
 	))
 
+	// Build the parser for the Sigma condition syntax
 	searchExprParser = participle.MustBuild(
-		&grammar.Condition{},
-		participle.Lexer(searchExprLexer),
-		participle.CaseInsensitive("Keyword", "Operator"),
+		&grammar.Condition{},                              // Use the Condition struct defined in the grammar package
+		participle.Lexer(searchExprLexer),                 // Use the lexer we defined above
+		participle.CaseInsensitive("Keyword", "Operator"), // Make the "Keyword" and "Operator" tokens case-insensitive
 	)
 )
 
-// Parses the Sigma condition syntax
+// Parses the Sigma condition syntax and returns a Condition struct and/or an error
 func ParseCondition(input string) (Condition, error) {
 	root := grammar.Condition{}
+	// Use the searchExprParser to parse the input string into a Condition struct
 	if err := searchExprParser.ParseString(input, &root); err != nil {
 		return Condition{}, err
 	}
 
+	// Convert the parsed search and aggregation expressions into an abstract syntax tree (AST)
 	search, err := searchToAST(root.Search)
 	if err != nil {
 		return Condition{}, err
@@ -40,6 +44,8 @@ func ParseCondition(input string) (Condition, error) {
 	if err != nil {
 		return Condition{}, err
 	}
+
+	// Return a new Condition struct that contains the ASTs for the search and aggregation expressions
 	return Condition{
 		Search:      search,
 		Aggregation: aggregation,

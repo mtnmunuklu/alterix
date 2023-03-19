@@ -10,46 +10,48 @@ import (
 
 type Rule struct {
 	// Required fields
-	Title     string
-	Logsource Logsource
-	Detection Detection
+	Title     string    // The title of the Sigma rule
+	Logsource Logsource // The log source that the rule should be applied to
+	Detection Detection // The detection logic of the rule
 
-	ID          string        `yaml:",omitempty"`
-	Related     []RelatedRule `yaml:",omitempty"`
-	Status      string        `yaml:",omitempty"`
-	Description string        `yaml:",omitempty"`
-	Author      string        `yaml:",omitempty"`
-	Level       string        `yaml:",omitempty"`
-	References  []string      `yaml:",omitempty"`
-	Tags        []string      `yaml:",omitempty"`
+	// Optional fields
+	ID          string        `yaml:",omitempty"` // The unique ID of the rule
+	Related     []RelatedRule `yaml:",omitempty"` // Related rules, if any
+	Status      string        `yaml:",omitempty"` // The status of the rule (e.g. "testing", "production")
+	Description string        `yaml:",omitempty"` // A brief description of the rule
+	Author      string        `yaml:",omitempty"` // The author of the rule
+	Level       string        `yaml:",omitempty"` // The severity level of the rule (e.g. "low", "medium", "high")
+	References  []string      `yaml:",omitempty"` // References related to the rule
+	Tags        []string      `yaml:",omitempty"` // Tags that can be used to organize the rules
 
 	// Any non-standard fields will end up in here
-	AdditionalFields map[string]interface{} `yaml:",inline"`
+	AdditionalFields map[string]interface{} `yaml:",inline"` // Any additional fields in the YAML document
 }
 
 type RelatedRule struct {
-	ID   string
-	Type string
+	ID   string // The unique ID of the related rule
+	Type string // The type of the related rule (e.g. "similar", "correlated", "superseded")
 }
 
 type Logsource struct {
-	Category   string `yaml:",omitempty"`
-	Product    string `yaml:",omitempty"`
-	Service    string `yaml:",omitempty"`
-	Definition string `yaml:",omitempty"`
+	Category   string `yaml:",omitempty"` // The category of the log source
+	Product    string `yaml:",omitempty"` // The product associated with the log source
+	Service    string `yaml:",omitempty"` // The service associated with the log source
+	Definition string `yaml:",omitempty"` // The definition of the log source
 
 	// Any non-standard fields will end up in here
-	AdditionalFields map[string]interface{} `yaml:",inline"`
+	AdditionalFields map[string]interface{} `yaml:",inline"` // Any additional fields in the YAML document
 }
 
 type Detection struct {
-	Searches   map[string]Search `yaml:",inline"`
-	Conditions Conditions        `yaml:"condition"`
-	Timeframe  time.Duration     `yaml:",omitempty"`
+	Searches   map[string]Search `yaml:",inline"`    // Searches holds a map of search query strings and their corresponding configurations.
+	Conditions Conditions        `yaml:"condition"`  // Conditions holds a slice of conditions to be checked for the detection to occur.
+	Timeframe  time.Duration     `yaml:",omitempty"` // Timeframe specifies the time duration within which the detection must occur.
 }
 
 type Conditions []Condition
 
+// UnmarshalYAML unmarshals the YAML node to the Conditions slice.
 func (c *Conditions) UnmarshalYAML(node *yaml.Node) error {
 	switch node.Kind {
 	case yaml.ScalarNode:
@@ -58,7 +60,7 @@ func (c *Conditions) UnmarshalYAML(node *yaml.Node) error {
 			return err
 		}
 
-		parsed, err := ParseCondition(condition)
+		parsed, err := ParseCondition(condition) // Parse the condition string into a Condition struct.
 		if err != nil {
 			return err
 		}
@@ -70,11 +72,11 @@ func (c *Conditions) UnmarshalYAML(node *yaml.Node) error {
 			return err
 		}
 		for _, condition := range conditions {
-			parsed, err := ParseCondition(condition)
+			parsed, err := ParseCondition(condition) // Parse each condition string in the slice into a Condition struct.
 			if err != nil {
 				return fmt.Errorf("error parsing condition \"%s\": %w", condition, err)
 			}
-			*c = append(*c, parsed)
+			*c = append(*c, parsed) // Append the parsed Condition struct to the Conditions slice.
 		}
 
 	default:
@@ -84,25 +86,29 @@ func (c *Conditions) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
-// Marshal the conditions back to grammar expressions :sob:
+// MarshalYAML marshals the Conditions slice to YAML.
 func (c Conditions) MarshalYAML() (interface{}, error) {
 	if len(c) == 1 {
-		return c[0], nil
+		return c[0], nil // If there is only one Condition in the slice, return it.
 	} else {
-		return []Condition(c), nil
+		return []Condition(c), nil // Otherwise, return the Conditions slice as a sequence of Condition structs.
 	}
 }
 
+// Search defines a search criteria that can be used to match events.
 type Search struct {
-	Keywords      []string
-	EventMatchers []EventMatcher
+	Keywords      []string       // Keywords to search for
+	EventMatchers []EventMatcher // List of event matchers (maps of fields to values)
 }
 
+// UnmarshalYAML decodes the YAML representation of a Search object.
 func (s *Search) UnmarshalYAML(node *yaml.Node) error {
 	switch node.Kind {
 	// In the common case, SearchIdentifiers are a single EventMatcher (map of field names to values)
 	case yaml.MappingNode:
+		// Allocate a single element slice for EventMatchers
 		s.EventMatchers = []EventMatcher{{}}
+		// Decode the mapping node into the single element slice
 		return node.Decode(&s.EventMatchers[0])
 
 	// Or, SearchIdentifiers can be a list.
@@ -114,8 +120,10 @@ func (s *Search) UnmarshalYAML(node *yaml.Node) error {
 
 		switch node.Content[0].Kind {
 		case yaml.ScalarNode:
+			// If the first item is a scalar, then it is a list of keywords.
 			return node.Decode(&s.Keywords)
 		case yaml.MappingNode:
+			// If the first item is a mapping, then it is a list of EventMatchers.
 			return node.Decode(&s.EventMatchers)
 		default:
 			return fmt.Errorf("invalid condition list node type %d", node.Kind)
@@ -126,18 +134,22 @@ func (s *Search) UnmarshalYAML(node *yaml.Node) error {
 	}
 }
 
+// MarshalYAML encodes the Search object into a YAML representation.
 func (s Search) MarshalYAML() (interface{}, error) {
-
 	var err error
 	result := &yaml.Node{}
 
 	if s.Keywords != nil {
+		// Encode a list of keywords
 		err = result.Encode(&s.Keywords)
 	} else if len(s.EventMatchers) == 1 {
+		// Encode a single EventMatcher
 		err = result.Encode(&s.EventMatchers[0])
 	} else if len(s.EventMatchers) == 0 {
+		// If there are no search criteria
 		err = fmt.Errorf("no search criteria")
 	} else {
+		// Encode a list of EventMatchers
 		err = result.Encode(&s.EventMatchers)
 	}
 
@@ -146,11 +158,16 @@ func (s Search) MarshalYAML() (interface{}, error) {
 
 type EventMatcher []FieldMatcher
 
+// UnmarshalYAML parses the YAML node and sets the fields on the EventMatcher struct
 func (f *EventMatcher) UnmarshalYAML(node *yaml.Node) error {
+	// EventMatchers are represented as key-value pairs in YAML, so we expect the node
+	// to be a mapping node with an even number of content elements
 	if len(node.Content)%2 != 0 {
 		return fmt.Errorf("internal: node.Content %% 2 != 0")
 	}
 
+	// Loop through each content element, parsing the field and value pairs into
+	// FieldMatcher structs and appending them to the EventMatcher slice
 	for i := 0; i < len(node.Content); i += 2 {
 		matcher := FieldMatcher{}
 		err := matcher.unmarshal(node.Content[i], node.Content[i+1])
@@ -162,20 +179,22 @@ func (f *EventMatcher) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
+// MarshalYAML returns a YAML representation of the EventMatcher struct
 func (f EventMatcher) MarshalYAML() (interface{}, error) {
 
-	// Event matchers are represented by mapping nodes
+	// EventMatchers are represented as key-value pairs in YAML, so we create a
+	// new mapping node to hold the field-value pairs
 	result := &yaml.Node{
 		Kind: yaml.MappingNode,
 	}
 
-	// Reconstruct the mapping node for this event matcher
+	// Loop through each FieldMatcher in the slice, marshaling them into key-value pairs
 	for _, matcher := range f {
-		// Reconstruct the field and value nodes
+		// Reconstruct the field and value nodes using the FieldMatcher's marshal method
 		if field_node, value_node, err := matcher.marshal(); err != nil {
 			return nil, err
 		} else {
-			// Store the field name/value
+			// Append the field and value nodes to the content of the mapping node
 			result.Content = append(result.Content, field_node, value_node)
 		}
 	}
@@ -183,34 +202,42 @@ func (f EventMatcher) MarshalYAML() (interface{}, error) {
 	return result, nil
 }
 
+// FieldMatcher defines a matcher for a single field
 type FieldMatcher struct {
 	Field     string
 	Modifiers []string
 	Values    []interface{}
 }
 
+// unmarshal decodes a single FieldMatcher
 func (f *FieldMatcher) unmarshal(field *yaml.Node, values *yaml.Node) error {
+	// Split the field name and modifiers
 	fieldParts := strings.Split(field.Value, "|")
 	f.Field, f.Modifiers = fieldParts[0], fieldParts[1:]
 
+	// Decode the field value(s)
 	switch values.Kind {
 	case yaml.ScalarNode:
+		// If there is only one value, decode it into the first element of the Values slice
 		f.Values = []interface{}{nil}
 		return values.Decode(&f.Values[0])
 	case yaml.SequenceNode:
+		// If there are multiple values, decode them into the Values slice
 		return values.Decode(&f.Values)
 	case yaml.MappingNode:
+		// If there is a nested mapping, decode it into the first element of the Values slice
 		f.Values = []interface{}{map[string]interface{}{}}
 		return values.Decode(&f.Values[0])
 	case yaml.AliasNode:
+		// If the values are an alias, recursively decode the target
 		return f.unmarshal(field, values.Alias)
 	}
 	return nil
 }
 
+// marshal encodes a single FieldMatcher
 func (f *FieldMatcher) marshal() (field_node *yaml.Node, value_node *yaml.Node, err error) {
-
-	// Reconstruct the field name with modifiers
+	// Encode the field name with modifiers
 	field := f.Field
 	if len(f.Modifiers) > 0 {
 		field = field + "|" + strings.Join(f.Modifiers, "|")
@@ -226,8 +253,10 @@ func (f *FieldMatcher) marshal() (field_node *yaml.Node, value_node *yaml.Node, 
 	// Encode the field value(s)
 	value_node = &yaml.Node{}
 	if len(f.Values) == 1 {
+		// If there is only one value, encode it as a scalar
 		err = value_node.Encode(&f.Values[0])
 	} else {
+		// If there are multiple values, encode them as a sequence
 		err = value_node.Encode(&f.Values)
 	}
 	if err != nil {
@@ -237,8 +266,14 @@ func (f *FieldMatcher) marshal() (field_node *yaml.Node, value_node *yaml.Node, 
 	return field_node, value_node, err
 }
 
+// ParseRule reads a byte slice and returns a parsed Rule object and an error (if any)
 func ParseRule(input []byte) (Rule, error) {
+	// Create a Rule instance to hold the parsed YAML data
 	rule := Rule{}
+
+	// Unmarshal the input YAML data into the Rule instance
 	err := yaml.Unmarshal(input, &rule)
+
+	// Return the Rule instance and error (if any)
 	return rule, err
 }
