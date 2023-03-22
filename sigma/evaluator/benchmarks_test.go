@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"Alterix/sigma"
-	"Alterix/sigma/evaluator"
+	"github.com/mtnmunuklu/alterix/sigma"
+	"github.com/mtnmunuklu/alterix/sigma/evaluator"
 )
 
 const testRule = `

@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"Alterix/sigma"
+	"github.com/mtnmunuklu/alterix/sigma"
 )
 
 // evaluateSearchExpression evaluates a Sigma search expression recursively and returns a string representation of the search condition.

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"Alterix/sigma"
+	"github.com/mtnmunuklu/alterix/sigma"
 )
 
 // RuleEvaluator represents a rule evaluator that is capable of computing the search, condition, and query results of a Sigma rule.

@@ -1,7 +1,7 @@
 package sigma
 
 import (
-	grammar "Alterix/sigma/internal/grammer"
+	grammar "github.com/mtnmunuklu/alterix/sigma/internal/grammer"
 
 	"github.com/alecthomas/participle"
 	"github.com/alecthomas/participle/lexer"

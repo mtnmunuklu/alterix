@@ -3,7 +3,7 @@ package evaluator
 import (
 	"context"
 
-	"Alterix/sigma"
+	"github.com/mtnmunuklu/alterix/sigma"
 )
 
 // Option is a function that takes a RuleEvaluator pointer and modifies its configuration

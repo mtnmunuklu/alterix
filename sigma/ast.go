@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	grammar "Alterix/sigma/internal/grammer"
+	grammar "github.com/mtnmunuklu/alterix/sigma/internal/grammer"
 )
 
 type Condition struct {

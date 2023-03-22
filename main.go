@@ -1,14 +1,15 @@
 package main
 
 import (
-	"Alterix/sigma"
-	"Alterix/sigma/evaluator"
 	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/mtnmunuklu/alterix/sigma"
+	"github.com/mtnmunuklu/alterix/sigma/evaluator"
 )
 
 var (

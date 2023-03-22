@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"Alterix/sigma"
+	"github.com/mtnmunuklu/alterix/sigma"
 )
 
 // evaluateAggregationExpression evaluates an aggregation expression within a Sigma rule

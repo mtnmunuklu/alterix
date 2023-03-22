@@ -3,7 +3,7 @@ package evaluator
 import (
 	"context"
 
-	"Alterix/sigma"
+	"github.com/mtnmunuklu/alterix/sigma"
 )
 
 const testRule = `
