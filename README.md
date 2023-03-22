@@ -28,7 +28,7 @@ To use Alterix, you will need to have Go installed on your system. You can downl
 
 Once Go is installed, you can install Alterix using the following command:
 
-```go get github.com/alterix/alterix```
+```go get github.com/mtnmunuklu/alterix```
 
 
 This will download and install the Alterix tool to your $GOPATH/bin directory.
