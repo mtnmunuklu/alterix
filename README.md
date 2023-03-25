@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-<a href="https://pkg.go.dev/"><img src="https://img.shields.io/badge/%F0%9F%93%9A%20godoc-pkg-informational.svg" alt="Go Doc"></a> <a href="https://goreportcard.com/"><img src="https://img.shields.io/badge/%F0%9F%93%9D%20goreport-X+-success.svg" alt="Go Report"></a> <a href="https://gocover.io/"><img src="https://img.shields.io/badge/%F0%9F%94%8E%20gocover-X%25-success.svg" alt="Coverage Status"></a> <a href="https://travis-ci.com/"><img src="https://img.shields.io/badge/%E2%9A%99%20build-X-success.svg" alt="Build Status"></a> 
+<a href="https://pkg.go.dev/"><img src="https://img.shields.io/badge/%F0%9F%93%9A%20godoc-pkg-informational.svg" alt="Go Doc"></a> <a href="https://goreportcard.com/report/github.com/mtnmunuklu/alterix"><img src="https://img.shields.io/badge/%F0%9F%93%9D%20goreport-X+-success.svg" alt="Go Report"></a> <a href="https://gocover.io/"><img src="https://img.shields.io/badge/%F0%9F%94%8E%20gocover-X%25-success.svg" alt="Coverage Status"></a> <a href="https://travis-ci.com/"><img src="https://img.shields.io/badge/%E2%9A%99%20build-X-success.svg" alt="Build Status"></a> 
 
 # Alterix
 
