@@ -69,62 +69,125 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 
 	// if the search is 'one of them'
 	case sigma.OneOfThem:
+		// if the number of searches is greater than 1, add "("
+		if len(rule.Detection.Searches) > 1 {
+			conditionResult = append(conditionResult, "(")
+		}
 		// iterate through all the search expressions and add 'or' between them
 		for name := range rule.Detection.Searches {
+			// If the search expression name matches the pattern, and it's not the first one, and the last element is not "and", "or", or "(", then add " or " to the condition result
 			if len(conditionResult) > 0 {
-				conditionResult = append(conditionResult, " or ")
+				lastElement := conditionResult[len(conditionResult)-1]
+				if lastElement != "and" && lastElement != "or" && lastElement != "(" {
+					conditionResult = append(conditionResult, " or ")
+				}
 			}
 			// evaluate the nested search expression
 			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
 		}
+		// if the number of searches is greater than 1, add ")"
+		if len(rule.Detection.Searches) > 1 {
+			conditionResult = append(conditionResult, ")")
+		}
 		return conditionResult
 
 	case sigma.OneOfPattern:
+		var matchingSearches []string
+		// Iterate over the search expressions in the rule's searches
+		for name := range rule.Detection.Searches {
+			// Check if the search expression name matches the pattern
+			matchesPattern, _ := path.Match(s.Pattern, name)
+			if matchesPattern {
+				// If the search expression name matches the pattern, add it to the matchingSearches slice
+				matchingSearches = append(matchingSearches, name)
+			}
+		}
+
+		numMatchingSearches := len(matchingSearches)
+		// If there are more than one matching search expressions, add an opening parenthesis to the condition result
+		if numMatchingSearches > 1 {
+			conditionResult = append(conditionResult, "(")
+		}
+
+		// Iterate over the matching search expressions
+		for i, name := range matchingSearches {
+			if i > 0 {
+				lastElement := conditionResult[len(conditionResult)-1]
+				// If the last element in the condition result is not "and", "or", or "(", add " or " to the condition result
+				if lastElement != "and" && lastElement != "or" && lastElement != "(" {
+					conditionResult = append(conditionResult, " or ")
+				}
+			}
+			// Evaluate the search expression and append its result to the condition result
+			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
+		}
+
+		// If there are more than one matching search expressions, add a closing parenthesis to the condition result
+		if numMatchingSearches > 1 {
+			conditionResult = append(conditionResult, ")")
+		}
+
+		return conditionResult
+
+	case sigma.AllOfThem:
+		// if the number of searches is greater than 1, add "("
+		if len(rule.Detection.Searches) > 1 {
+			conditionResult = append(conditionResult, "(")
+		}
 		// iterate over all search expressions in the rule's searches
 		for name := range rule.Detection.Searches {
-			// check if the search expression name matches the pattern
-			matchesPattern, _ := path.Match(s.Pattern, name)
-			if !matchesPattern {
-				// if the search expression name does not match the pattern, skip to the next one
-				continue
-			}
-			// if the search expression name matches the pattern and it's not the first one, add " or " to the condition result
+			// If the search expression name matches the pattern, and it's not the first one, and the last element is not "and", "or", or "(", then add " or " to the condition result
 			if len(conditionResult) > 0 {
-				conditionResult = append(conditionResult, " or ")
+				lastElement := conditionResult[len(conditionResult)-1]
+				if lastElement != "and" && lastElement != "or" && lastElement != "(" {
+					conditionResult = append(conditionResult, " and ")
+				}
 			}
 			// recursively evaluate the search expression and append its result to the condition result
 			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
 		}
-		return conditionResult
-
-	case sigma.AllOfThem:
-		// iterate over all search expressions in the rule's searches
-		for name := range rule.Detection.Searches {
-			// if it's not the first search expression, add " and " to the condition result
-			if len(conditionResult) > 0 {
-				conditionResult = append(conditionResult, " and ")
-			}
-			// recursively evaluate the search expression and append its result to the condition result
-			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
+		// if the number of searches is greater than 1, add ")"
+		if len(rule.Detection.Searches) > 1 {
+			conditionResult = append(conditionResult, ")")
 		}
 		return conditionResult
 
 	case sigma.AllOfPattern:
-		// iterate over all search expressions in the rule's searches
+		var matchingSearches []string
+		// Iterate over the search expressions in the rule's searches
 		for name := range rule.Detection.Searches {
-			// check if the search expression name matches the pattern
+			// Check if the search expression name matches the pattern
 			matchesPattern, _ := path.Match(s.Pattern, name)
-			if !matchesPattern {
-				// if the search expression name does not match the pattern, skip to the next one
-				continue
+			if matchesPattern {
+				// If the search expression name matches the pattern, add it to the matchingSearches slice
+				matchingSearches = append(matchingSearches, name)
 			}
-			// if the search expression name matches the pattern and it's not the first one, add " and " to the condition result
-			if len(conditionResult) > 0 {
-				conditionResult = append(conditionResult, " and ")
+		}
+
+		numMatchingSearches := len(matchingSearches)
+		// If there are more than one matching search expressions, add an opening parenthesis to the condition result
+		if numMatchingSearches > 1 {
+			conditionResult = append(conditionResult, "(")
+		}
+
+		// Iterate over the matching search expressions
+		for i, name := range matchingSearches {
+			if i > 0 {
+				lastElement := conditionResult[len(conditionResult)-1]
+				// If the last element in the condition result is not "and", "or", or "(", add " or " to the condition result
+				if lastElement != "and" && lastElement != "or" && lastElement != "(" {
+					conditionResult = append(conditionResult, " and ")
+				}
 			}
-			// recursively evaluate the search expression and append its result to the condition result
+			// Evaluate the search expression and append its result to the condition result
 			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
 		}
+
+		// If there are more than one matching search expressions, add a closing parenthesis to the condition result
+		if numMatchingSearches > 1 {
+			conditionResult = append(conditionResult, ")")
+		}
+
 		return conditionResult
 	}
 	panic(fmt.Sprintf("unhandled node type %T", search))
