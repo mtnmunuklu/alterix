@@ -70,7 +70,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 	// if the search is 'one of them'
 	case sigma.OneOfThem:
 		// if the number of searches is greater than 1, add "("
-		if len(rule.Detection.Searches) > 1 {
+		if !isTopLevel && len(rule.Detection.Searches) > 1 {
 			conditionResult = append(conditionResult, "(")
 		}
 		// iterate through all the search expressions and add 'or' between them
@@ -86,7 +86,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
 		}
 		// if the number of searches is greater than 1, add ")"
-		if len(rule.Detection.Searches) > 1 {
+		if !isTopLevel && len(rule.Detection.Searches) > 1 {
 			conditionResult = append(conditionResult, ")")
 		}
 		return conditionResult
@@ -105,7 +105,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 
 		numMatchingSearches := len(matchingSearches)
 		// If there are more than one matching search expressions, add an opening parenthesis to the condition result
-		if numMatchingSearches > 1 {
+		if !isTopLevel && numMatchingSearches > 1 {
 			conditionResult = append(conditionResult, "(")
 		}
 
@@ -123,7 +123,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 		}
 
 		// If there are more than one matching search expressions, add a closing parenthesis to the condition result
-		if numMatchingSearches > 1 {
+		if !isTopLevel && numMatchingSearches > 1 {
 			conditionResult = append(conditionResult, ")")
 		}
 
@@ -131,7 +131,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 
 	case sigma.AllOfThem:
 		// if the number of searches is greater than 1, add "("
-		if len(rule.Detection.Searches) > 1 {
+		if !isTopLevel && len(rule.Detection.Searches) > 1 {
 			conditionResult = append(conditionResult, "(")
 		}
 		// iterate over all search expressions in the rule's searches
@@ -147,7 +147,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 			conditionResult = rule.evaluateSearchExpression(sigma.SearchIdentifier{Name: name}, conditionResult, false)
 		}
 		// if the number of searches is greater than 1, add ")"
-		if len(rule.Detection.Searches) > 1 {
+		if !isTopLevel && len(rule.Detection.Searches) > 1 {
 			conditionResult = append(conditionResult, ")")
 		}
 		return conditionResult
@@ -166,7 +166,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 
 		numMatchingSearches := len(matchingSearches)
 		// If there are more than one matching search expressions, add an opening parenthesis to the condition result
-		if numMatchingSearches > 1 {
+		if !isTopLevel && numMatchingSearches > 1 {
 			conditionResult = append(conditionResult, "(")
 		}
 
@@ -184,7 +184,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 		}
 
 		// If there are more than one matching search expressions, add a closing parenthesis to the condition result
-		if numMatchingSearches > 1 {
+		if !isTopLevel && numMatchingSearches > 1 {
 			conditionResult = append(conditionResult, ")")
 		}
 
