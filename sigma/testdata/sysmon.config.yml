@@ -6,6 +6,8 @@ logsources:
   process_creation:
     category: process_creation
     product: windows
+    conditions:
+      EventID: 1
     rewrite:
       product: windows
       service: sysmon
@@ -77,5 +79,86 @@ logsources:
       product: windows
       service: sysmon
 fieldmappings:
+  UtcTime: utctime
+  SourceProcessGuid: process_guid
+  SourceProcessGUID: process_guid
+  ProcessGuid: process_guid
+  SourceProcessId: process_id
+  SourceImage: process_path
+  Image: process_path
   CommandLine: command
-  Image: sproc
+  CurrentDirectory: current_directory
+  SourceUser: username
+  User: username
+  LogonGuid: logon_guid
+  LogonId: logon_id
+  TerminalSessionId: terminal_session_id
+  IntegrityLevel: integrity_level
+  Hashes: hashes
+  ParentProcessGuid: parent_process_guid
+  ParentProcessId: parent_process_id
+  ParentImage: parent_process_path
+  ParentCommandLine: parent_command_line
+  ImageLoaded: image_loaded
+  Signed: signed
+  Signature: signature
+  TargetFileName: filepath
+  TargetFilename: filepath
+  CreationUtcTime: creation_utctime
+  PreviousCreationUtcTime: previous_creation_utctime
+  Protocol: protocol
+  Initiated: initiated
+  SourceIsIpv6: source_is_ipv6
+  SourceIp: src_ip
+  SourceHostName: src_host
+  SourceHostname: src_host
+  SourcePort: src_port
+  SourcePortName: source_port_name
+  DestinationIsIpv6: destination_is_ipv6
+  DestinationIp: dst_ip
+  DestinationHostName: dst_host
+  DestinationHostname: dst_host
+  DestinationPort: dst_port
+  DestinationPortName: destination_port_name
+  TargetProcessGuid: target_process_guid
+  TargetProcessGUID: target_process_guid
+  TargetProcessId: dst_process_id
+  TargetImage: dst_process_path
+  NewThreadId: new_thread_id
+  StartAddress: start_address
+  StartModule: start_module
+  StartFunction: start_function
+  Device: device
+  EventType: event_type
+  TargetObject: target_object
+  Details: details
+  SourceThreadId: source_thread_id
+  GrantedAccess: granted_access
+  CallTrace: call_trace
+  RuleName: rule_name
+  FileVersion: file_version
+  Description: description
+  Product: product
+  Company: company
+  OriginalFileName: original_file_name
+  QueryName: query_name
+  QueryStatus: query_status
+  QueryResults: query_results
+  Hash: hash
+  SignatureStatus: signature_status
+  PipeName: pipe_name
+  Operation: operation
+  Name: name
+  Type: type
+  Destination: destination
+  EventNamespace: event_namespace
+  Query: query
+  ParentUser: puser
+  TargetUser: dst_username
+  Configuration: configuration
+  ConfigurationFileHash: configuration_fhash
+  State: state
+  Version: version
+  SchemaVersion: scheme_version
+  Consumer: consumer
+  Filter: filter
