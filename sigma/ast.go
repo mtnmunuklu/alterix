@@ -5,9 +5,11 @@ import (
 	"strings"
 
 	grammar "github.com/mtnmunuklu/alterix/sigma/internal/grammer"
+	"gopkg.in/yaml.v3"
 )
 
 type Condition struct {
+	node        *yaml.Node
 	Search      SearchExpr      // represents the search query
 	Aggregation AggregationExpr // represents the aggregation operation
 }
@@ -24,6 +26,11 @@ func (c Condition) MarshalYAML() (interface{}, error) {
 	} else {
 		return search, nil
 	}
+}
+
+// Position returns the line and column of this Condition in the original input
+func (c Condition) Position() (int, int) {
+	return c.node.Line - 1, c.node.Column - 1
 }
 
 // SearchExpr is an interface that represents a search expression.

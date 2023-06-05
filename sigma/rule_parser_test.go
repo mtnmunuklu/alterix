@@ -9,6 +9,7 @@ import (
 
 	"github.com/bradleyjkemp/cupaloy/v2"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"gopkg.in/yaml.v3"
 )
 
@@ -79,7 +80,7 @@ func TestMarshalRule(t *testing.T) {
 				t.Fatalf("error decoding rule copy: %v", err)
 			}
 
-			if !cmp.Equal(rule, rule_copy) {
+			if !cmp.Equal(rule, rule_copy, cmpopts.IgnoreUnexported(Condition{}, FieldMatcher{}, Search{})) {
 				t.Fatalf("rule and marshalled copy are not equal")
 			}
 		})
