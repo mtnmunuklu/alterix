@@ -10,7 +10,16 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/main.go",
-            "args": ["-filepath", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\testdata\\proc_creation_win_apt_chafer_mar18.rule.yml", "-config", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\testdata\\sysmon.config.yml"],
+            "args": ["-filepath", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\testdata\\proc_creation_win_apt_chafer_mar18.rule.yml", "-config", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\testdata\\sysmon.config.yml", "-json", "-output", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\alterix\\sigma\\testdata"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Debug2",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["-filepath", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\testdata\\proc_creation_win_apt_chafer_mar18.rule.yml", "-config", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\testdata\\sysmon.config.yml", "-output", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\alterix\\sigma\\testdata"],
             "cwd": "${workspaceFolder}"
         }
     ]

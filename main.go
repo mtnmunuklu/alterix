@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/mtnmunuklu/alterix/sigma"
 	"github.com/mtnmunuklu/alterix/sigma/evaluator"
@@ -16,6 +19,8 @@ var (
 	filePath   string
 	configPath string
 	showHelp   bool
+	outputJSON bool
+	outputPath string
 )
 
 // Set up the command-line flags
@@ -23,7 +28,52 @@ func init() {
 	flag.StringVar(&filePath, "filepath", "", "Name or path of the file or directory to read")
 	flag.StringVar(&configPath, "config", "", "Path to the configuration file")
 	flag.BoolVar(&showHelp, "help", false, "Show usage")
+	flag.BoolVar(&outputJSON, "json", false, "Output results in JSON format")
+	flag.StringVar(&outputPath, "output", "", "Output directory for writing files")
 	flag.Parse()
+}
+
+func formatJSONResult(rule sigma.Rule, result map[int]string) []byte {
+	// Define a struct type named JSONResult to represent the JSON output fields.
+	type JSONResult struct {
+		Name        string   `json:"Name"`
+		Description string   `json:"Description"`
+		Query       string   `json:"Query"`
+		InsertDate  string   `json:"InsertDate"`
+		LastUpdate  string   `json:"LastUpdate"`
+		Tags        []string `json:"Tags"`
+	}
+
+	// Create a strings.Builder variable named query.
+	var query strings.Builder
+	for i, value := range result {
+		// Add a newline character if the index is greater than zero.
+		if i > 0 {
+			query.WriteString("\n")
+		}
+		query.WriteString(value)
+	}
+
+	// Create an instance of the JSONResult struct.
+	jsonResult := JSONResult{
+		Name:        rule.Title,
+		Description: rule.Description,
+		Query:       query.String(),
+		InsertDate:  time.Now().UTC().Format(time.RFC3339),
+		LastUpdate:  time.Now().UTC().Format(time.RFC3339),
+		Tags:        rule.Tags,
+	}
+
+	// Marshal the JSONResult struct into JSON data.
+	//jsonData, err := json.Marshal(jsonResult)
+	jsonData, err := json.MarshalIndent(jsonResult, "", "  ")
+
+	if err != nil {
+		fmt.Println("Error encoding JSON:", err)
+		return nil
+	}
+
+	return jsonData
 }
 
 func main() {
@@ -92,18 +142,17 @@ func main() {
 
 	// Loop over each file and parse its contents as a Sigma rule
 	for file, fileContent := range fileContents {
-		fmt.Println("Filepath:", file)
 		rule, err := sigma.ParseRule(fileContent)
 		if err != nil {
 			fmt.Println("Error parsing rule:", err)
-			return
+			continue
 		}
 
 		// Parse the configuration file as a Sigma config
 		config, err := sigma.ParseConfig(configContent)
 		if err != nil {
 			fmt.Println("Error parsing config:", err)
-			return
+			continue
 		}
 
 		// Evaluate the Sigma rule against the config
@@ -112,12 +161,42 @@ func main() {
 		result, err := r.Alters(ctx)
 		if err != nil {
 			fmt.Println("Error converting rule:", err)
-			return
+			continue
 		}
 
+		var output string
+
 		// Print the results of the query
-		for _, queryResult := range result.QueryResults {
-			fmt.Printf("Query: %v\n", queryResult)
+		if outputJSON {
+			jsonResult := formatJSONResult(rule, result.QueryResults)
+			output = string(jsonResult)
+		} else {
+			var builder strings.Builder
+			builder.WriteString("Filepath: " + file + "\n")
+			for _, queryResult := range result.QueryResults {
+				builder.WriteString("Query: " + queryResult + "\n")
+			}
+			output = builder.String()
 		}
+
+		// Check if outputPath is provided
+		if outputPath != "" {
+			// Create the output file path using the Name field from the rule
+			outputFilePath := filepath.Join(outputPath, fmt.Sprintf("%s.json", rule.Title))
+
+			// Write the output string to the output file
+			err := os.WriteFile(outputFilePath, []byte(output), 0644)
+			if err != nil {
+				fmt.Println("Error writing output to file:", err)
+				continue
+			}
+
+			fmt.Printf("Output for rule '%s' written to file: %s\n", rule.Title, outputFilePath)
+		} else {
+			fmt.Printf("Output: %s", output)
+		}
+
 	}
+
+	fmt.Print(len(fileContents))
 }

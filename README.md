@@ -40,14 +40,18 @@ To use Alterix, you will need Sigma rules and a configuration file for CRYPTTECH
 The configuration file for CRYPTTECH's SIEM product should be obtained from your system administrator.
 
 To convert Sigma rules to the query language of CRYPTTECH's SIEM product, you can use the following command:
-```alterix -filepath <path-to-rules> -config <path-to-config>```
 
+```alterix -filepath <path-to-rules> -config <path-to-config> [-json] [-output <output-directory>]```
 
 The `filepath` flag specifies the location of the Sigma rules. This can be a file or directory path.
 
 The `config` flag specifies the location of the configuration file for CRYPTTECH's SIEM product.
 
-Alterix will output the queries in the query language of CRYPTTECH's SIEM product to the console.
+The ``json` flag indicates that the output should be in JSON format.
+
+The `output` flag specifies the directory where the output files should be written.
+
+If the json flag is provided, Alterix will convert the Sigma rules to JSON format. If the output flag is provided, Alterix will save the output files to the specified directory. If neither flag is provided, the output will be displayed in the console.
 
 ## Contributing
 
