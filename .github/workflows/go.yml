@@ -27,7 +27,7 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Build for ${{ matrix.platform }}
-        run: go build -o alterix-${{ matrix.platform }}${{ if eq(matrix.platform, 'windows-latest') }}.exe{{ end }}
+        run: go build -o alterix-${{ matrix.platform }}${{ if eq(matrix.platform, 'windows-latest') }}.exe{{ else }}{{ endif }}
 
       - name: Test
         run: echo "No tests to run."
@@ -39,6 +39,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./alterix-${{ matrix.platform }}${{ if eq(matrix.platform, 'windows-latest') }}.exe{{ end }}
-          asset_name: alterix-${{ matrix.platform }}${{ if eq(matrix.platform, 'windows-latest') }}.exe{{ end }}
+          asset_path: ./alterix-${{ matrix.platform }}${{ if eq(matrix.platform, 'windows-latest') }}.exe{{ else }}{{ endif }}
+          asset_name: alterix-${{ matrix.platform }}${{ if eq(matrix.platform, 'windows-latest') }}.exe{{ else }}{{ endif }}
           asset_content_type: application/octet-stream
