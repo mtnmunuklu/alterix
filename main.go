@@ -36,12 +36,12 @@ func init() {
 func formatJSONResult(rule sigma.Rule, result map[int]string) []byte {
 	// Define a struct type named JSONResult to represent the JSON output fields.
 	type JSONResult struct {
-		Name        string   `json:"Name"`
-		Description string   `json:"Description"`
-		Query       string   `json:"Query"`
-		InsertDate  string   `json:"InsertDate"`
-		LastUpdate  string   `json:"LastUpdate"`
-		Tags        []string `json:"Tags"`
+		Name           string   `json:"Name"`
+		Description    string   `json:"Description"`
+		Query          string   `json:"Query"`
+		InsertDate     string   `json:"InsertDate"`
+		LastUpdateDate string   `json:"LastUpdateDate"`
+		Tags           []string `json:"Tags"`
 	}
 
 	// Create a strings.Builder variable named query.
@@ -56,12 +56,12 @@ func formatJSONResult(rule sigma.Rule, result map[int]string) []byte {
 
 	// Create an instance of the JSONResult struct.
 	jsonResult := JSONResult{
-		Name:        rule.Title,
-		Description: rule.Description,
-		Query:       query.String(),
-		InsertDate:  time.Now().UTC().Format(time.RFC3339),
-		LastUpdate:  time.Now().UTC().Format(time.RFC3339),
-		Tags:        rule.Tags,
+		Name:           rule.Title,
+		Description:    rule.Description,
+		Query:          query.String(),
+		InsertDate:     time.Now().UTC().Format(time.RFC3339),
+		LastUpdateDate: time.Now().UTC().Format(time.RFC3339),
+		Tags:           rule.Tags,
 	}
 
 	// Marshal the JSONResult struct into JSON data.
@@ -193,10 +193,7 @@ func main() {
 
 			fmt.Printf("Output for rule '%s' written to file: %s\n", rule.Title, outputFilePath)
 		} else {
-			fmt.Printf("Output: %s", output)
+			fmt.Printf("%s", output)
 		}
-
 	}
-
-	fmt.Print(len(fileContents))
 }

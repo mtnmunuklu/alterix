@@ -5,21 +5,40 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug",
+            "name": "DebugWithJsonAndOutput",
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/main.go",
-            "args": ["-filepath", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\testdata\\proc_creation_win_apt_chafer_mar18.rule.yml", "-config", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\testdata\\sysmon.config.yml", "-json", "-output", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\alterix\\sigma\\testdata"],
+            "args": ["-filepath", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\data\\rules\\proc_creation_win_apt_chafer_mar18.rule.yml", "-config", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\data\\configs\\sysmon.config.yml", "-json", "-output", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\alterix\\sigma\\data\\output"],
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "Debug2",
+            "name": "DebugWithOnlyOutput",
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/main.go",
-            "args": ["-filepath", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\testdata\\proc_creation_win_apt_chafer_mar18.rule.yml", "-config", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\testdata\\sysmon.config.yml", "-output", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\alterix\\sigma\\testdata"],
+            "args": ["-filepath", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\data\\rules\\proc_creation_win_apt_chafer_mar18.rule.yml", "-config", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\data\\configs\\sysmon.config.yml", "-output", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\alterix\\sigma\\data\\output"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "DebugWithOnlyJSON",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["-filepath", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\data\\rules\\proc_creation_win_apt_chafer_mar18.rule.yml", "-config", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\data\\configs\\sysmon.config.yml","-json"],
+            "cwd": "${workspaceFolder}"
+        }
+        ,
+        {
+            "name": "DebugWithoutJsonAndOutput",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["-filepath", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\data\\rules\\proc_creation_win_apt_chafer_mar18.rule.yml", "-config", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\data\\configs\\sysmon.config.yml"],
             "cwd": "${workspaceFolder}"
         }
     ]

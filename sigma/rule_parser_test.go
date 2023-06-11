@@ -14,7 +14,7 @@ import (
 )
 
 func TestParseRule(t *testing.T) {
-	err := filepath.Walk("./testdata/", func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk("./data/rules/", func(path string, info os.FileInfo, err error) error {
 		if !strings.HasSuffix(path, ".rule.yml") {
 			return nil
 		}
