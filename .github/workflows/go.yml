@@ -2,9 +2,11 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
+  release:
+    types: [created]
 
 jobs:
   build-and-deploy:
@@ -24,32 +26,19 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
 
-    - name: Set Release Version
-      run: echo "::set-env name=RELEASE_VERSION::v1.0.0" # Replace with your desired release version
-
     - name: Build
       run: go build -v ./...
 
     - name: Test
       run: echo "No tests to run."
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ env.RELEASE_VERSION }}
-        release_name: Release ${{ env.RELEASE_VERSION }}
-        draft: false
-        prerelease: false
-
     - name: Upload Assets
+      if: ${{ github.event_name == 'release' }}
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./path/to/your/asset.zip # Replace with the path to your built asset
-        asset_name: YourAssetName.zip # Replace with the desired name for your asset
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./alterix.zip # Replace with the path to your built asset
+        asset_name: alterix.zip # Replace with the desired name for your asset
         asset_content_type: application/zip
