@@ -29,11 +29,11 @@ jobs:
       - name: Build for ${{ matrix.platform }}
         run: |
           if [[ "${{ matrix.platform }}" == "ubuntu-latest" ]]; then
-            go build -o alterix-linux ./...
+            go build -o alterix-linux
           elif [[ "${{ matrix.platform }}" == "macos-latest" ]]; then
-            go build -o alterix-macos ./...
+            go build -o alterix-macos
           else
-            go build -o alterix-windows.exe ./...
+            go build -o alterix-windows.exe
           fi
 
       - name: Test
