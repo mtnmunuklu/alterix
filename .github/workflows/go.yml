@@ -27,15 +27,11 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Build
-        run: go build -o alterix ./...
+        run: go build -o alterix-${{ matrix.platform }} ./...
 
       - name: Test
         run: echo "No tests to run."
 
-      - name: Determine Asset Name
-        id: asset-name
-        run: echo "::set-output name=name::alterix-${{ matrix.platform }}"
-      
       - name: Upload Assets
         if: ${{ github.event_name == 'release' }}
         uses: actions/upload-release-asset@v1
@@ -43,6 +39,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./alterix
-          asset_name: ${{ steps.asset-name.outputs.name }}
+          asset_path: ./alterix-${{ matrix.platform }}
+          asset_name: alterix-${{ matrix.platform }}
           asset_content_type: application/octet-stream
