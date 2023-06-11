@@ -27,7 +27,7 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Build for ${{ matrix.platform }}
-        run: go build -o alterix-${{ matrix.platform }} ./...
+        run: go build -o alterix-${{ matrix.platform }}
 
       - name: Test
         run: echo "No tests to run."
