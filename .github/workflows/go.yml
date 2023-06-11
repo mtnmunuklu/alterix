@@ -28,11 +28,11 @@ jobs:
 
       - name: Build for ${{ matrix.platform }}
         run: |
-          if [[ "${{ matrix.platform }}" == "ubuntu-latest" ]]; then
+          if [ "${{ matrix.platform }}" = "ubuntu-latest" ]; then
             go build -o alterix-linux
-          elif [[ "${{ matrix.platform }}" == "macos-latest" ]]; then
+          elif [ "${{ matrix.platform }}" = "macos-latest" ]; then
             go build -o alterix-macos
-          elif [[ "${{ matrix.platform }}" == "windows-latest" ]]; then
+          elif [ "${{ matrix.platform }}" = "windows-latest" ]; then
             go build -o alterix-windows.exe
           fi
 
@@ -47,19 +47,19 @@ jobs:
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: |
-            if [[ "${{ matrix.platform }}" == "ubuntu-latest" ]]; then
+            if [ "${{ matrix.platform }}" = "ubuntu-latest" ]; then
               ./alterix-linux
-            elif [[ "${{ matrix.platform }}" == "macos-latest" ]]; then
+            elif [ "${{ matrix.platform }}" = "macos-latest" ]; then
               ./alterix-macos
-            elif [[ "${{ matrix.platform }}" == "windows-latest" ]]; then
+            elif [ "${{ matrix.platform }}" = "windows-latest" ]; then
               ./alterix-windows.exe
             fi
           asset_name: |
-            if [[ "${{ matrix.platform }}" == "ubuntu-latest" ]]; then
+            if [ "${{ matrix.platform }}" = "ubuntu-latest" ]; then
               alterix-linux
-            elif [[ "${{ matrix.platform }}" == "macos-latest" ]]; then
+            elif [ "${{ matrix.platform }}" = "macos-latest" ]; then
               alterix-macos
-            elif [[ "${{ matrix.platform }}" == "windows-latest" ]]; then
+            elif [ "${{ matrix.platform }}" = "windows-latest" ]; then
               alterix-windows.exe
             fi
           asset_content_type: application/octet-stream
