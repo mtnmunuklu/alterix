@@ -28,17 +28,13 @@ jobs:
 
       - name: Build for ${{ matrix.platform }}
         run: |
-          case ${{ matrix.platform }} in
-            ubuntu-latest)
-              go build -o alterix-linux
-              ;;
-            macos-latest)
-              go build -o alterix-macos
-              ;;
-            windows-latest)
-              go build -o alterix-windows.exe
-              ;;
-          esac
+          if [[ "${{ matrix.platform }}" == "ubuntu-latest" ]]; then
+            go build -o alterix-linux
+          elif [[ "${{ matrix.platform }}" == "macos-latest" ]]; then
+            go build -o alterix-macos
+          elif [[ "${{ matrix.platform }}" == "windows-latest" ]]; then
+            go build -o alterix-windows.exe
+          fi
 
       - name: Test
         run: echo "No tests to run."
@@ -51,27 +47,19 @@ jobs:
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: |
-            case ${{ matrix.platform }} in
-              ubuntu-latest)
-                ./alterix-linux
-                ;;
-              macos-latest)
-                ./alterix-macos
-                ;;
-              windows-latest)
-                ./alterix-windows.exe
-                ;;
-            esac
+            if [[ "${{ matrix.platform }}" == "ubuntu-latest" ]]; then
+              ./alterix-linux
+            elif [[ "${{ matrix.platform }}" == "macos-latest" ]]; then
+              ./alterix-macos
+            elif [[ "${{ matrix.platform }}" == "windows-latest" ]]; then
+              ./alterix-windows.exe
+            fi
           asset_name: |
-            case ${{ matrix.platform }} in
-              ubuntu-latest)
-                alterix-linux
-                ;;
-              macos-latest)
-                alterix-macos
-                ;;
-              windows-latest)
-                alterix-windows.exe
-                ;;
-            esac
+            if [[ "${{ matrix.platform }}" == "ubuntu-latest" ]]; then
+              alterix-linux
+            elif [[ "${{ matrix.platform }}" == "macos-latest" ]]; then
+              alterix-macos
+            elif [[ "${{ matrix.platform }}" == "windows-latest" ]]; then
+              alterix-windows.exe
+            fi
           asset_content_type: application/octet-stream
