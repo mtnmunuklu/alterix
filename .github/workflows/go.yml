@@ -27,14 +27,7 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Build for ${{ matrix.platform }}
-        run: |
-          if [[ "${{ matrix.platform }}" == "ubuntu-latest" ]]; then
-            go build -o alterix-linux
-          elif [[ "${{ matrix.platform }}" == "macos-latest" ]]; then
-            go build -o alterix-macos
-          else
-            go build -o alterix-windows.exe
-          fi
+        run: go build -o alterix-${{ matrix.platform }}${{ if eq(matrix.platform, 'windows-latest') }}.exe{{ end }}
 
       - name: Test
         run: echo "No tests to run."
@@ -46,20 +39,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: |
-            if [[ "${{ matrix.platform }}" == "ubuntu-latest" ]]; then
-              ./alterix-linux
-            elif [[ "${{ matrix.platform }}" == "macos-latest" ]]; then
-              ./alterix-macos
-            else
-              ./alterix-windows.exe
-            fi
-          asset_name: |
-            if [[ "${{ matrix.platform }}" == "ubuntu-latest" ]]; then
-              alterix-linux
-            elif [[ "${{ matrix.platform }}" == "macos-latest" ]]; then
-              alterix-macos
-            else
-              alterix-windows.exe
-            fi
+          asset_path: ./alterix-${{ matrix.platform }}${{ if eq(matrix.platform, 'windows-latest') }}.exe{{ end }}
+          asset_name: alterix-${{ matrix.platform }}${{ if eq(matrix.platform, 'windows-latest') }}.exe{{ end }}
           asset_content_type: application/octet-stream
