@@ -39,6 +39,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./alterix-${{ matrix.platform }}$([[ "${{ matrix.platform }}" == "windows-latest" ]] && echo ".exe")
-          asset_name: alterix-${{ matrix.platform }}$([[ "${{ matrix.platform }}" == "windows-latest" ]] && echo ".exe")
+          asset_path: ./alterix-${{ matrix.platform }}
+          asset_name: alterix-${{ matrix.platform }}
           asset_content_type: application/octet-stream
