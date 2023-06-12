@@ -47,7 +47,7 @@ The `filepath` flag specifies the location of the Sigma rules. This can be a fil
 
 The `config` flag specifies the location of the configuration file for CRYPTTECH's SIEM product.
 
-The ``json` flag indicates that the output should be in JSON format.
+The `json` flag indicates that the output should be in JSON format.
 
 The `output` flag specifies the directory where the output files should be written.
 
