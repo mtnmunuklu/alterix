@@ -45,7 +45,7 @@ isnt valid`,
 		fileType := InferFileType([]byte(tt.file))
 		if fileType != tt.expectedType {
 			// If the inferred file type does not match the expected type, fail the test and print the error message
-			t.Errorf("Expected\n%s\nto be detected as a %s", tt.file, tt.expectedType)
+			t.Errorf("Expected\n%s\not be detected as a %s", tt.file, tt.expectedType)
 		}
 	}
 }

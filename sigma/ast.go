@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	grammar "github.com/mtnmunuklu/alterix/sigma/internal/grammer"
+	"github.com/mtnmunuklu/alterix/sigma/internal/grammar"
 	"gopkg.in/yaml.v3"
 )
 
