@@ -2,11 +2,20 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.yml'
   pull_request:
-    branches: [main]
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.yml'
   release:
-    types: [created]
+    types:
+      - created
 
 jobs:
   build-and-deploy:
@@ -14,12 +23,18 @@ jobs:
 
     strategy:
       matrix:
-        platform: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: [1.19]
+        platform:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        go-version:
+          - 1.19
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - name: Set up Go ${{ matrix.go-version }}
         uses: actions/setup-go@v2
@@ -37,7 +52,6 @@ jobs:
         run: |
           Rename-Item -Path ./alterix -NewName "alterix.exe"
           powershell Compress-Archive -Path ./alterix.exe -DestinationPath alterix-${{ matrix.platform }}.zip
-
 
       - name: Create Zip Archive (Linux, macOS)
         if: ${{ matrix.platform != 'windows-latest' }}
