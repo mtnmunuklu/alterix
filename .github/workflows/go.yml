@@ -35,7 +35,9 @@ jobs:
       - name: Create Zip Archive (Windows)
         if: ${{ matrix.platform == 'windows-latest' }}
         run: |
-          powershell Compress-Archive -Path ./alterix -DestinationPath alterix-${{ matrix.platform }}.zip
+          Rename-Item -Path ./alterix -NewName "alterix.exe"
+          powershell Compress-Archive -Path ./alterix.exe -DestinationPath alterix-${{ matrix.platform }}.zip
+
 
       - name: Create Zip Archive (Linux, macOS)
         if: ${{ matrix.platform != 'windows-latest' }}
