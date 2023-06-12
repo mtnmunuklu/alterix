@@ -32,6 +32,14 @@ jobs:
       - name: Test
         run: echo "No tests to run."
 
+      - name: Create Release Zip
+        if: ${{ github.event_name == 'release' }}
+        run: |
+          mkdir release-assets
+          cp ./alterix-${{ matrix.platform }} ./release-assets/alterix-${{ matrix.platform }}${{ if eq(matrix.platform, 'windows-latest') }}.exe{{ end }}
+          cd release-assets
+          zip -r alterix-${{ matrix.platform }}.zip ./*
+
       - name: Upload Assets
         if: ${{ github.event_name == 'release' }}
         uses: actions/upload-release-asset@v1
@@ -39,6 +47,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./alterix-${{ matrix.platform }}
-          asset_name: alterix-${{ matrix.platform }}
-          asset_content_type: application/octet-stream
+          asset_path: ./release-assets/alterix-${{ matrix.platform }}.zip
+          asset_name: alterix-${{ matrix.platform }}.zip
+          asset_content_type: application/zip
