@@ -24,14 +24,22 @@ Sigma is an open-source project that provides a rule format and a set of tools f
 
 ## Installation
 
-To use Alterix, you will need to have Go installed on your system. You can download and install Go from the official website: https://golang.org/dl/
+Alterix provides precompiled ZIP files for different platforms. You can download the appropriate ZIP file for your platform from the following links:
 
-Once Go is installed, you can install Alterix using the following command:
+- [Windows](https://github.com/mtnmunuklu/alterix/releases/latest/download/alterix-windows-latest.zip)
+- [Linux](https://github.com/mtnmunuklu/alterix/releases/latest/download/alterix-linux-latest.zip)
+- [macOS](https://github.com/mtnmunuklu/alterix/releases/latest/download/alterix-macos-latest.zip)
 
-```go get github.com/mtnmunuklu/alterix```
+Once you have downloaded the ZIP file for your platform, extract it to a directory of your choice. The extracted files will include the Alterix executable.
 
+Make sure the directory containing the Alterix executable is added to your system's PATH environment variable, so you can run Alterix from any location in the command line.
 
-This will download and install the Alterix tool to your $GOPATH/bin directory.
+That's it! You have successfully installed Alterix on your system. You can now proceed to the [Usage](#usage) section to learn how to use Alterix.
+
+If you prefer to build Alterix from source, you can refer to the [Build Instructions](BUILD.md) for detailed steps on how to build and install it on your platform.
+
+Please note that Alterix requires Go to be installed on your system. You can download and install Go from the official website: [https://golang.org/dl/](https://golang.org/dl/)
+
 
 ## Usage
 
@@ -55,15 +63,7 @@ If the json flag is provided, Alterix will convert the Sigma rules to JSON forma
 
 ## Contributing
 
-Contributions to Alterix are welcome and encouraged! To contribute to the project, please follow these steps:
-
-1. Fork the repository.
-2. Create a new branch for your changes.
-3. Make your changes and commit them.
-4. Push your changes to your fork.
-5. Submit a pull request.
-
-Please make sure your code follows the Go code style guidelines and includes appropriate tests.
+Contributions to Alterix are welcome and encouraged! Please read the [contribution guidelines](contributing.md) before making any contributions to the project.
 
 ## Acknowledgements
 
