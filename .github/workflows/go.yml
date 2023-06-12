@@ -2,11 +2,14 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
   release:
-    types: [created]
+    types:
+      - created
 
 jobs:
   build-and-deploy:
@@ -14,8 +17,12 @@ jobs:
 
     strategy:
       matrix:
-        platform: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: [1.19]
+        platform:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        go-version:
+          - 1.19
 
     steps:
       - name: Checkout repository
@@ -27,18 +34,19 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Build for ${{ matrix.platform }}
-        run: go build -o alterix-${{ matrix.platform }}
+        run: go build -o alterix
 
       - name: Test
         run: echo "No tests to run."
 
-      - name: Create Release Zip
-        if: ${{ github.event_name == 'release' }}
+      - name: Create Zip Archive
         run: |
-          mkdir release-assets
-          cp ./alterix-${{ matrix.platform }} ./release-assets/alterix-${{ matrix.platform }}${{ if eq(matrix.platform, 'windows-latest') }}.exe{{ end }}
-          cd release-assets
-          zip -r alterix-${{ matrix.platform }}.zip ./*
+          mkdir alterix-assets
+          mv alterix alterix-assets/
+          cd alterix-assets
+          zip -r alterix-${{ matrix.platform }}.zip alterix*
+          mv alterix-${{ matrix.platform }}.zip ../
+        if: ${{ matrix.platform == 'windows-latest' }}
 
       - name: Upload Assets
         if: ${{ github.event_name == 'release' }}
@@ -47,6 +55,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./release-assets/alterix-${{ matrix.platform }}.zip
+          asset_path: ./alterix-${{ matrix.platform }}.zip
           asset_name: alterix-${{ matrix.platform }}.zip
-          asset_content_type: application/zip
+          asset_content_type: application/octet-stream
