@@ -4,15 +4,13 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - '**/*.md'
-      - '**/*.yml'
+    paths:
+      - '**/*.go'
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - '**/*.md'
-      - '**/*.yml'
+    paths:
+      - '**/*.go'
   release:
     types:
       - created
