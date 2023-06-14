@@ -25,4 +25,3 @@ If you witness or experience any violations of this Code of Conduct, please repo
 ## Conclusion
 
 By participating in this project, you agree to abide by this Code of Conduct. We value your contribution and commitment to maintaining a positive and inclusive environment for everyone involved. Let's work together to create a welcoming and respectful community.
-

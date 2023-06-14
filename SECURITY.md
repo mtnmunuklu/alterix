@@ -41,4 +41,3 @@ We kindly request that security researchers follow these guidelines when reporti
 - Respect the privacy and confidentiality of our users and their data.
 
 We appreciate your cooperation in making our project more secure and protecting our users' information.
-
