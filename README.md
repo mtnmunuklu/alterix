@@ -17,7 +17,6 @@ Alterix is a tool that converts Sigma rules to the query language of CRYPTTECH's
 - [Contributing](#contributing)
 - [Acknowledgement](#acknowledgement)
 - [License](#license)
-- [Buy Me a Coffee](#buy-me-a-coffee)
 
 ## Overview
 
@@ -75,10 +74,3 @@ We also want to thank the creators of the Sigma project, whose rule format we us
 ## License
 
 Alterix is licensed under the MIT License. See [LICENSE](LICENSE) for the full text of the license.
-
-## Buy Me a Coffee
-
-Whether you use this project, learn from it or like it, please consider supporting me with a coffee so I can spend more time on open source projects like this.
-
-<a href="https://www.buymeacoffee.com/mtnmunuklu" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
-
