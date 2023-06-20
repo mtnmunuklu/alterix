@@ -221,12 +221,14 @@ func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Searc
 			}
 
 			// field matchers can specify modifiers (FieldName|modifier1|modifier2) which change the matching behaviour
+			comparators := []valueComparator{}
 			comparator := baseComparator
 			for _, name := range fieldModifiers {
 				if modifiers[name] == nil {
 					return filters, fmt.Errorf("unsupported modifier %s", name)
 				}
 				comparator = modifiers[name](comparator)
+				comparators = append(comparators, comparator)
 			}
 
 			matcherValues, err := rule.getMatcherValues(ctx, fieldMatcher)
@@ -237,10 +239,10 @@ func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Searc
 			var filter string
 			if len(rule.fieldmappings[fieldMatcher.Field]) == 0 {
 				// If there are no field mappings defined, only the specified field is checked
-				filter = rule.matcherMatchesValues(matcherValues, []string{fieldMatcher.Field}, comparator, allValuesMustMatch)
+				filter = rule.matcherMatchesValues(matcherValues, []string{fieldMatcher.Field}, comparators, allValuesMustMatch)
 			} else {
 				// If there are field mappings defined, they are used to check multiple fields
-				filter = rule.matcherMatchesValues(matcherValues, rule.fieldmappings[fieldMatcher.Field], comparator, allValuesMustMatch)
+				filter = rule.matcherMatchesValues(matcherValues, rule.fieldmappings[fieldMatcher.Field], comparators, allValuesMustMatch)
 			}
 
 			filters = append(filters, filter)
@@ -292,13 +294,21 @@ func (rule *RuleEvaluator) getMatcherValues(ctx context.Context, matcher sigma.F
 // matcherMatchesValues takes a list of values to match against a list of fields,
 // a comparator function to compare values and fields, and a boolean indicating whether all values must match or any of them.
 // It returns a string representing a filter that can be used to match events with the specified fields and values.
-func (rule *RuleEvaluator) matcherMatchesValues(matcherValues []string, fields []string, comparator valueComparator, allValuesMustMatch bool) string {
+func (rule *RuleEvaluator) matcherMatchesValues(matcherValues []string, fields []string, comparators []valueComparator, allValuesMustMatch bool) string {
 	var filters []string
 	for i, field := range fields {
 		var subFilters []string
 		for j, matcherValue := range matcherValues {
 			// compare field and matcherValue using the provided comparator function
-			filter := comparator(field, matcherValue)
+			// Apply all comparators to matcherValue
+			var updatedMatcherValue string
+			for _, comparator := range comparators {
+				updatedMatcherValue = comparator(field, matcherValue)
+				matcherValue = updatedMatcherValue
+			}
+
+			filter := updatedMatcherValue
+
 			if j == 0 {
 				// first match value should be added directly to subFilters
 				subFilters = append(subFilters, filter)
