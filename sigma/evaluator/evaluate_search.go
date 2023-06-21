@@ -220,15 +220,29 @@ func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Searc
 				fieldModifiers = fieldModifiers[:len(fieldModifiers)-1]
 			}
 
+			lastModifiers := []string{"contains", "endswith", "startswith", "re", "cidr", "gt", "gte", "lt", "lte"}
+
 			// field matchers can specify modifiers (FieldName|modifier1|modifier2) which change the matching behaviour
-			comparators := []valueComparator{}
-			comparator := baseComparator
-			for _, name := range fieldModifiers {
+			comparators := []valueComparator{baseComparator}
+
+			for i, name := range fieldModifiers {
 				if modifiers[name] == nil {
 					return filters, fmt.Errorf("unsupported modifier %s", name)
 				}
-				comparator = modifiers[name](comparator)
-				comparators = append(comparators, comparator)
+
+				if i < len(fieldModifiers)-1 {
+					for _, m := range lastModifiers {
+						if m == name {
+							return filters, fmt.Errorf("unsupported modifier usage: %s", name)
+						}
+					}
+				}
+
+				if i == 0 {
+					comparators[0] = modifiers[name](comparators[0])
+				} else {
+					comparators = append(comparators, modifiers[name](comparators[0]))
+				}
 			}
 
 			matcherValues, err := rule.getMatcherValues(ctx, fieldMatcher)
@@ -301,13 +315,15 @@ func (rule *RuleEvaluator) matcherMatchesValues(matcherValues []string, fields [
 		for j, matcherValue := range matcherValues {
 			// compare field and matcherValue using the provided comparator function
 			// Apply all comparators to matcherValue
-			var updatedMatcherValue string
-			for _, comparator := range comparators {
-				updatedMatcherValue = comparator(field, matcherValue)
-				matcherValue = updatedMatcherValue
+			var filter string
+			for k, comparator := range comparators {
+				if len(comparators) > 1 && k < len(comparators)-1 {
+					filter = comparator(nil, matcherValue)
+				} else {
+					filter = comparator(field, matcherValue)
+				}
+				matcherValue = filter
 			}
-
-			filter := updatedMatcherValue
 
 			if j == 0 {
 				// first match value should be added directly to subFilters

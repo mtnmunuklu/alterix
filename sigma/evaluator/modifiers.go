@@ -2,8 +2,10 @@ package evaluator
 
 import (
 	"encoding/base64"
+	"encoding/binary"
 	"fmt"
 	"strings"
+	"unicode/utf16"
 )
 
 // valueComparator is a function that compares a field in an event to a value using a specified comparison method
@@ -47,7 +49,44 @@ var modifiers = map[string]valueModifier{
 	// The "base64" modifier matches when the field matches the specified value encoded in Base64
 	"base64": func(next valueComparator) valueComparator {
 		return func(field interface{}, matcherValue interface{}) string {
-			return fmt.Sprintf("%v", base64.StdEncoding.EncodeToString([]byte(coerceString(matcherValue))))
+			if field == nil {
+				return fmt.Sprintf("%v", base64.StdEncoding.EncodeToString([]byte(coerceString(matcherValue))))
+			} else {
+				return fmt.Sprintf("%v = '%v'", strings.ToLower(coerceString(field)), base64.StdEncoding.EncodeToString([]byte(coerceString(matcherValue))))
+			}
+
+		}
+	},
+	// The "base64offset" modifier matches when the field matches the specified value encoded using Base64 Offset
+	"base64offset": func(next valueComparator) valueComparator {
+		return func(field interface{}, matcherValue interface{}) string {
+			// Character set to be used for encoding with Base64 Offset
+			// The first character is considered as the offset, followed by consecutive characters
+			offsetChars := "PQRSTUVWXYZABCDEFGHIJKLMNOabcdefghijklmnopqrstuvwxyz0123456789+/"
+			// Convert data to []byte array
+			bytes := []byte(coerceString(matcherValue))
+			if field == nil {
+				return fmt.Sprintf("%v", base64.NewEncoding(offsetChars).EncodeToString(bytes))
+			} else {
+				return fmt.Sprintf("%v = '%v'", strings.ToLower(coerceString(field)), base64.NewEncoding(offsetChars).EncodeToString(bytes))
+			}
+
+		}
+	},
+	// The "wide" modifier matches when the field matches the specified value encoded in UTF-16.
+	"wide": func(next valueComparator) valueComparator {
+		return func(field interface{}, matcherValue interface{}) string {
+			runes := utf16.Encode([]rune(coerceString(matcherValue)))
+			bytes := make([]byte, 2*len(runes))
+			for i, r := range runes {
+				binary.LittleEndian.PutUint16(bytes[i*2:], r)
+			}
+			if field == nil {
+				return fmt.Sprintf("%v", coerceString(runes))
+			} else {
+				return fmt.Sprintf("%v = '%v'", strings.ToLower(coerceString(field)), coerceString(runes))
+			}
+
 		}
 	},
 	// The "re" modifier matches when the field matches the specified regular expression
