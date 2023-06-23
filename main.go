@@ -21,6 +21,7 @@ var (
 	showHelp   bool
 	outputJSON bool
 	outputPath string
+	version    bool
 )
 
 // Set up the command-line flags
@@ -30,6 +31,7 @@ func init() {
 	flag.BoolVar(&showHelp, "help", false, "Show usage")
 	flag.BoolVar(&outputJSON, "json", false, "Output results in JSON format")
 	flag.StringVar(&outputPath, "output", "", "Output directory for writing files")
+	flag.BoolVar(&version, "version", false, "Show version information")
 	flag.Parse()
 }
 
@@ -65,9 +67,7 @@ func formatJSONResult(rule sigma.Rule, result map[int]string) []byte {
 	}
 
 	// Marshal the JSONResult struct into JSON data.
-	//jsonData, err := json.Marshal(jsonResult)
 	jsonData, err := json.MarshalIndent(jsonResult, "", "  ")
-
 	if err != nil {
 		fmt.Println("Error encoding JSON:", err)
 		return nil
@@ -76,22 +76,38 @@ func formatJSONResult(rule sigma.Rule, result map[int]string) []byte {
 	return jsonData
 }
 
+func printUsage() {
+	fmt.Println("Usage: alterix -filepath <path> -config <path> [flags]")
+	fmt.Println("Flags:")
+	flag.PrintDefaults()
+	fmt.Println("Example:")
+	fmt.Println("  alterix -filepath /path/to/file -config /path/to/config")
+}
+
 func main() {
 	// If the help flag is provided, print usage information and exit
 	if showHelp {
-		flag.Usage()
+		printUsage()
+		return
+	}
+
+	// If the version flag is provided, print version information and exit
+	if version {
+		fmt.Println("Alterix version 1.0.0")
 		return
 	}
 
 	// Check that the filepath flag is provided
 	if filePath == "" {
 		fmt.Println("Please provide a file path or directory path with the -filepath flag.")
+		printUsage()
 		return
 	}
 
 	// Check that the config flag is provided
 	if configPath == "" {
 		fmt.Println("Please provide a configuration file path with the -config flag.")
+		printUsage()
 		return
 	}
 

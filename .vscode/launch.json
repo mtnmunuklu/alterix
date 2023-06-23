@@ -30,8 +30,7 @@
             "program": "${workspaceFolder}/main.go",
             "args": ["-filepath", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\data\\rules\\proc_creation_win_apt_chafer_mar18.rule.yml", "-config", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\data\\configs\\sysmon.config.yml","-json"],
             "cwd": "${workspaceFolder}"
-        }
-        ,
+        },
         {
             "name": "DebugWithoutJsonAndOutput",
             "type": "go",
@@ -39,6 +38,33 @@
             "mode": "auto",
             "program": "${workspaceFolder}/main.go",
             "args": ["-filepath", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\data\\rules\\proc_creation_win_apt_chafer_mar18.rule.yml", "-config", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\data\\configs\\sysmon.config.yml"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "DebugWithoutConfig",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["-filepath", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\data\\rules\\proc_creation_win_apt_chafer_mar18.rule.yml"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "DebugWithoutFilePath",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["-config", "C:\\Users\\metinmunuklu\\VisualtStudioProjects\\Alterix\\sigma\\data\\configs\\sysmon.config.yml"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "DebugWithOnlyVersion",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["-version"],
             "cwd": "${workspaceFolder}"
         }
     ]
