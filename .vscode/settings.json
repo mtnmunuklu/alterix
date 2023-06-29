@@ -1,5 +1,0 @@
-{
-    "go.delveConfig": {
-        "debugAdapter": "legacy"
-    }
-}
