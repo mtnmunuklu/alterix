@@ -16,6 +16,7 @@ Alterix is a tool that converts Sigma rules to the query language of CRYPTTECH's
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [Acknowledgement](#acknowledgement)
+- [Sponsors](#sponsors)
 - [License](#license)
 
 ## Overview
@@ -70,6 +71,25 @@ Contributions to Alterix are welcome and encouraged! Please read the [contributi
 This project was inspired by the work of Bradley Kemp, whose original repository can be found [here](https://github.com/bradleyjkemp/sigma-go). We would like to thank Bradley for his valuable contribution to the community and for making his code available to us.
 
 We also want to thank the creators of the Sigma project, whose rule format we use in this project. More information about Sigma can be found [here](https://github.com/Neo23x0/sigma).
+
+## Sponsors
+
+We would like to express our gratitude to the following sponsors for their generous support:
+
+<div align="center">
+  <div style="display: flex; justify-content: center; align-items: center;">
+    <a href="https://github.com/tolgaakkapulu" style="text-align: center; margin-right: 20px;">
+      <img src="https://github.com/tolgaakkapulu.png" alt="Sponsor 1" width="50" style="border-radius: 50%;">
+      <br>
+    </a>
+    <a href="https://github.com/mkdemir" style="text-align: center; margin-right: 20px;">
+      <img src="https://github.com/mkdemir.png" alt="Sponsor 2" width="50" style="border-radius: 50%;">
+      <br>
+    </a>
+  </div>
+</div>
+
+If you are interested in becoming a sponsor, please visit our [GitHub Sponsors](https://github.com/sponsors) page.
 
 ## License
 
