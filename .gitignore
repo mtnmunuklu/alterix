@@ -4,7 +4,6 @@
 *.dll
 *.so
 *.dylib
-alterix
 
 # Test binary, built with `go test -c`
 *.test
@@ -15,5 +14,16 @@ alterix
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-# Sigma rule samples
-inputs/
+# VS Code specific files
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
