@@ -77,17 +77,15 @@ We also want to thank the creators of the Sigma project, whose rule format we us
 We would like to express our gratitude to the following sponsors for their generous support:
 
 <div align="center">
-  <div style="display: flex; justify-content: center; align-items: center;">
-    <a href="https://github.com/tolgaakkapulu" style="text-align: center; margin-right: 20px;">
-      <img src="https://github.com/tolgaakkapulu.png" alt="Sponsor 1" width="50" style="border-radius: 50%;">
-      <br>
-    </a>
-    <a href="https://github.com/mkdemir" style="text-align: center; margin-right: 20px;">
-      <img src="https://github.com/mkdemir.png" alt="Sponsor 2" width="50" style="border-radius: 50%;">
-      <br>
-    </a>
-  </div>
+  <a href="https://github.com/tolgaakkapulu">
+    <img src="https://github.com/tolgaakkapulu.png" alt="tolgaakkapulu" width="50" height="50" style="border-radius: 50%">
+  </a>
+  <a href="https://github.com/mkdemir">
+    <img src="https://github.com/mkdemir.png" alt="mkdemir" width="50" height="50" style="border-radius: 50%">
+  </a>
+  <!-- Diğer sponsorlar -->
 </div>
+
 
 If you are interested in becoming a sponsor, please visit our [GitHub Sponsors](https://github.com/sponsors) page.
 
