@@ -77,6 +77,9 @@ We also want to thank the creators of the Sigma project, whose rule format we us
 We would like to express our gratitude to the following sponsors for their generous support:
 
 <div align="center">
+  <a href="https://github.com/th3gundy">
+    <img src="https://github.com/th3gundy.png" alt="th3gundy" width="50" height="50" style="border-radius: 50%">
+  </a>
   <a href="https://github.com/tolgaakkapulu">
     <img src="https://github.com/tolgaakkapulu.png" alt="tolgaakkapulu" width="50" height="50" style="border-radius: 50%">
   </a>
