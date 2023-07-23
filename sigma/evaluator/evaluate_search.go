@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/mtnmunuklu/alterix/sigma"
+	"github.com/mtnmunuklu/alterix/sigma/evaluator/modifiers"
 )
 
 // evaluateSearchExpression evaluates a Sigma search expression recursively and returns a string representation of the search condition.
@@ -220,29 +221,9 @@ func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Searc
 				fieldModifiers = fieldModifiers[:len(fieldModifiers)-1]
 			}
 
-			lastModifiers := []string{"contains", "endswith", "startswith", "re", "cidr", "gt", "gte", "lt", "lte"}
-
-			// field matchers can specify modifiers (FieldName|modifier1|modifier2) which change the matching behaviour
-			comparators := []valueComparator{baseComparator}
-
-			for i, name := range fieldModifiers {
-				if modifiers[name] == nil {
-					return filters, fmt.Errorf("unsupported modifier %s", name)
-				}
-
-				if i < len(fieldModifiers)-1 {
-					for _, m := range lastModifiers {
-						if m == name {
-							return filters, fmt.Errorf("unsupported modifier usage: %s", name)
-						}
-					}
-				}
-
-				if i == 0 {
-					comparators[0] = modifiers[name](comparators[0])
-				} else {
-					comparators = append(comparators, modifiers[name](comparators[0]))
-				}
+			comparator, err := modifiers.GetComparator(fieldModifiers...)
+			if err != nil {
+				return filters, err
 			}
 
 			matcherValues, err := rule.getMatcherValues(ctx, fieldMatcher)
@@ -253,10 +234,14 @@ func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Searc
 			var filter string
 			if len(rule.fieldmappings[fieldMatcher.Field]) == 0 {
 				// If there are no field mappings defined, only the specified field is checked
-				filter = rule.matcherMatchesValues(matcherValues, []string{fieldMatcher.Field}, comparators, allValuesMustMatch)
+				filter, err = rule.matcherMatchesValues(matcherValues, []string{fieldMatcher.Field}, comparator, allValuesMustMatch)
 			} else {
 				// If there are field mappings defined, they are used to check multiple fields
-				filter = rule.matcherMatchesValues(matcherValues, rule.fieldmappings[fieldMatcher.Field], comparators, allValuesMustMatch)
+				filter, err = rule.matcherMatchesValues(matcherValues, rule.fieldmappings[fieldMatcher.Field], comparator, allValuesMustMatch)
+			}
+
+			if err != nil {
+				return filters, err
 			}
 
 			filters = append(filters, filter)
@@ -310,23 +295,16 @@ func (rule *RuleEvaluator) getMatcherValues(ctx context.Context, matcher sigma.F
 // matcherMatchesValues takes a list of values to match against a list of fields,
 // a comparator function to compare values and fields, and a boolean indicating whether all values must match or any of them.
 // It returns a string representing a filter that can be used to match events with the specified fields and values.
-func (rule *RuleEvaluator) matcherMatchesValues(matcherValues []string, fields []string, comparators []valueComparator, allValuesMustMatch bool) string {
+func (rule *RuleEvaluator) matcherMatchesValues(matcherValues []string, fields []string, comparator modifiers.ComparatorFunc, allValuesMustMatch bool) (string, error) {
 	var filters []string
 	for i, field := range fields {
 		var subFilters []string
-		for j, matcherValue := range matcherValues {
-			// compare field and matcherValue using the provided comparator function
-			// Apply all comparators to matcherValue
-			var filter string
-			for k, comparator := range comparators {
-				if len(comparators) > 1 && k < len(comparators)-1 {
-					filter = comparator(nil, matcherValue)
-				} else {
-					filter = comparator(field, matcherValue)
-				}
-				matcherValue = filter
+		for j, value := range matcherValues {
+			// compare field and value using the provided comparator function
+			filter, err := comparator(field, value)
+			if err != nil {
+				return "", err
 			}
-
 			if j == 0 {
 				// first match value should be added directly to subFilters
 				subFilters = append(subFilters, filter)
@@ -352,9 +330,9 @@ func (rule *RuleEvaluator) matcherMatchesValues(matcherValues []string, fields [
 	}
 	if len(fields) > 1 {
 		// if there are multiple fields, wrap filters in parentheses to keep operator precedence
-		return "(" + strings.Join(filters, "") + ")"
+		return "(" + strings.Join(filters, "") + ")", nil
 	} else {
 		// if there's only one field, filters can be added directly
-		return strings.Join(filters, "")
+		return strings.Join(filters, ""), nil
 	}
 }
