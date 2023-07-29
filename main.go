@@ -93,7 +93,7 @@ func main() {
 
 	// If the version flag is provided, print version information and exit
 	if version {
-		fmt.Println("Alterix version 1.0.0")
+		fmt.Println("Alterix version 1.2.0")
 		return
 	}
 

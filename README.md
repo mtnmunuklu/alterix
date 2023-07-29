@@ -28,7 +28,7 @@ Sigma is an open-source project that provides a rule format and a set of tools f
 Alterix provides precompiled ZIP files for different platforms. You can download the appropriate ZIP file for your platform from the following links:
 
 - [Windows](https://github.com/mtnmunuklu/alterix/releases/latest/download/alterix-windows-latest.zip)
-- [Linux](https://github.com/mtnmunuklu/alterix/releases/latest/download/alterix-linux-latest.zip)
+- [Linux](https://github.com/mtnmunuklu/alterix/releases/latest/download/alterix-ubuntu-latest.zip)
 - [macOS](https://github.com/mtnmunuklu/alterix/releases/latest/download/alterix-macos-latest.zip)
 
 Once you have downloaded the ZIP file for your platform, extract it to a directory of your choice. The extracted files will include the Alterix executable.
