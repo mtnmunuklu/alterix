@@ -94,7 +94,7 @@ To convert Sigma rules to the query language of CRYPTTECH's SIEM product in your
 If you have installed Alterix using Docker, you can use the following command to run Alterix inside the Docker container:
 
 ```shell
-docker exec alterix-container ./alterix -filepath <path-to-rules> -config <path-to-config> [-json] [-output <output-directory>]
+docker exec alterix ./alterix -filepath <path-to-rules> -config <path-to-config> [-json] [-output <output-directory>]
 ```
 
 The `filepath` flag specifies the location of the Sigma rules. This can be a file or directory path.
