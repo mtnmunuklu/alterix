@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Step 1: Build Docker image
-docker build -t alterix .
+docker build -t alterix -f ../Dockerfile
 
 # Step 2: Prepare Sigma rules and configuration file
 rules_directory="/path/to/rules"
