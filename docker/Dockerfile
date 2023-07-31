@@ -2,7 +2,7 @@
 FROM golang:latest as builder
 
 WORKDIR /app
-COPY . .
+COPY .. .
 RUN go build -o alterix .
 
 # Step 2: Create a minimal runtime image
