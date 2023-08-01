@@ -20,9 +20,15 @@ type QuerySettings struct {
 	Author      string   `json:"Author"`
 }
 
-type Payload struct {
+type SavePayload struct {
 	QuerySettings           QuerySettings `json:"querySettings"`
 	SmartRestRequestContext string        `json:"smartRestRequestContext"`
+}
+
+type GetPayload struct {
+	Username                string `json:"username"`
+	Filter                  string `json:"filter"`
+	SmartRestRequestContext string `json:"smartRestRequestContext"`
 }
 
 var (
@@ -31,7 +37,6 @@ var (
 	urlHostname       string
 	responseDirectory string
 	author            string
-	urlPath           string
 )
 
 func init() {
@@ -40,17 +45,62 @@ func init() {
 	flag.StringVar(&urlHostname, "url-hostname", "", "Hostname of the URL")
 	flag.StringVar(&responseDirectory, "response-file-dir", "", "Directory to save response files")
 	flag.StringVar(&author, "author", "", "Author to update in the payload")
-	flag.StringVar(&urlPath, "url-path", "/api/DpConnection/CallByInterfaceApi/?interfaceCode=ICSiemQueryAct&methodName=Save&culture=en", "Path of the URL")
 	flag.Parse()
 }
 
-func SendRequest(xAPIKey, url, method string, payload Payload, responseDirectory string) error {
-	payloadBytes, err := json.Marshal(payload)
+func SaveRequest(xAPIKey, saveFullURL, method, responseDirectory string, savePayload SavePayload) error {
+
+	savePayloadBytes, err := json.Marshal(savePayload)
 	if err != nil {
 		return fmt.Errorf("error marshaling JSON payload: %w", err)
 	}
 
-	req, err := http.NewRequest(method, url, strings.NewReader(string(payloadBytes)))
+	req, err := http.NewRequest(method, saveFullURL, strings.NewReader(string(savePayloadBytes)))
+	if err != nil {
+		return fmt.Errorf("error creating HTTP request: %w", err)
+	}
+
+	req.Header.Add("x-api-key", xAPIKey)
+	req.Header.Add("Content-Type", "application/json")
+
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: transport}
+	// Send HTTP request and get the response
+	res, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error sending HTTP request: %w", err)
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return fmt.Errorf("error reading HTTP response: %w", err)
+	}
+
+	// Create a filename using the value of the "Name" field
+	filename := fmt.Sprintf("%s.json", savePayload.QuerySettings.Name)
+
+	// Write the JSON response to a file
+	responseFilePath := filepath.Join(responseDirectory, filename)
+	err = writeJSONToFile(responseFilePath, body)
+	if err != nil {
+		return fmt.Errorf("error writing JSON response to file: %w", err)
+	}
+
+	fmt.Printf("Response received and saved to %s\n", responseFilePath)
+	return nil
+}
+
+func GetRequest(xAPIKey, getFullURL, method string, getPayload GetPayload) error {
+
+	getPayloadBytes, err := json.Marshal(getPayload)
+	if err != nil {
+		return fmt.Errorf("error marshaling JSON payload: %w", err)
+	}
+
+	req, err := http.NewRequest(method, getFullURL, strings.NewReader(string(getPayloadBytes)))
 	if err != nil {
 		return fmt.Errorf("error creating HTTP request: %w", err)
 	}
@@ -81,17 +131,13 @@ func SendRequest(xAPIKey, url, method string, payload Payload, responseDirectory
 		return fmt.Errorf("error decoding JSON response: %w", err)
 	}
 
-	// Create a filename using the value of the "Name" field
-	filename := fmt.Sprintf("%s.json", payload.QuerySettings.Name)
-
-	// Write the JSON response to a file
-	responseFilePath := filepath.Join(responseDirectory, filename)
-	err = writeJSONToFile(responseFilePath, body)
-	if err != nil {
-		return fmt.Errorf("error writing JSON response to file: %w", err)
+	if items, ok := jsonResponse["Items"].([]interface{}); ok {
+		itemsCount := len(items)
+		if itemsCount > 0 {
+			return fmt.Errorf("rule is already exist: %s", getPayload.Filter)
+		}
 	}
 
-	fmt.Printf("Response received and saved to %s\n", responseFilePath)
 	return nil
 }
 
@@ -118,6 +164,9 @@ func main() {
 		return
 	}
 
+	saveURLPath := "/api/DpConnection/CallByInterfaceApi/?interfaceCode=ICSiemQueryAct&methodName=Save&culture=en"
+	getURLPath := "/api/DpConnection/CallByInterfaceApi/?interfaceCode=ICSiemQueryAct&methodName=GetList&culture=en"
+
 	stat, err := os.Stat(jsonFilePath)
 	if err != nil {
 		fmt.Println("Error opening JSON file or directory:", err)
@@ -136,20 +185,32 @@ func main() {
 				}
 				defer jsonFile.Close()
 
-				var payload Payload
+				var savePayload SavePayload
+				var getPayload GetPayload
 				decoder := json.NewDecoder(jsonFile)
-				if err := decoder.Decode(&payload.QuerySettings); err != nil {
+				if err := decoder.Decode(&savePayload.QuerySettings); err != nil {
 					fmt.Println("Error decoding JSON file:", err)
 					return nil
 				}
 
 				// Update the author field in the payload
-				payload.QuerySettings.Author = author
+				savePayload.QuerySettings.Author = author
 				// Update the SmartRestRequestContext field in the payload
-				payload.SmartRestRequestContext = "-<SmartRestRequestContext>-"
+				savePayload.SmartRestRequestContext = "-<SmartRestRequestContext>-"
 
-				fullURL := fmt.Sprintf("https://%s%s", urlHostname, urlPath)
-				if err := SendRequest(xAPIKey, fullURL, "POST", payload, responseDirectory); err != nil {
+				getPayload.Username = author
+				getPayload.Filter = savePayload.QuerySettings.Name
+				getPayload.SmartRestRequestContext = "-<SmartRestRequestContext>-"
+
+				saveFullURL := fmt.Sprintf("https://%s%s", urlHostname, saveURLPath)
+				getFullURL := fmt.Sprintf("https://%s%s", urlHostname, getURLPath)
+
+				err = GetRequest(xAPIKey, getFullURL, "POST", getPayload)
+				if err == nil {
+					if err := SaveRequest(xAPIKey, saveFullURL, "POST", responseDirectory, savePayload); err != nil {
+						fmt.Println(err)
+					}
+				} else {
 					fmt.Println(err)
 				}
 			}
@@ -166,20 +227,33 @@ func main() {
 		}
 		defer jsonFile.Close()
 
-		var payload Payload
+		var savePayload SavePayload
+		var getPayload GetPayload
+
 		decoder := json.NewDecoder(jsonFile)
-		if err := decoder.Decode(&payload.QuerySettings); err != nil {
+		if err := decoder.Decode(&savePayload.QuerySettings); err != nil {
 			fmt.Println("Error decoding JSON file:", err)
 			return
 		}
 
 		// Update the author field in the payload
-		payload.QuerySettings.Author = author
+		savePayload.QuerySettings.Author = author
 		// Update the SmartRestRequestContext field in the payload
-		payload.SmartRestRequestContext = "-<SmartRestRequestContext>-"
+		savePayload.SmartRestRequestContext = "-<SmartRestRequestContext>-"
 
-		fullURL := fmt.Sprintf("https://%s%s", urlHostname, urlPath)
-		if err := SendRequest(xAPIKey, fullURL, "POST", payload, responseDirectory); err != nil {
+		getPayload.Username = author
+		getPayload.Filter = savePayload.QuerySettings.Name
+		getPayload.SmartRestRequestContext = "-<SmartRestRequestContext>-"
+
+		saveFullURL := fmt.Sprintf("https://%s%s", urlHostname, saveURLPath)
+		getFullURL := fmt.Sprintf("https://%s%s", urlHostname, getURLPath)
+
+		err = GetRequest(xAPIKey, getFullURL, "POST", getPayload)
+		if err == nil {
+			if err := SaveRequest(xAPIKey, saveFullURL, "POST", responseDirectory, savePayload); err != nil {
+				fmt.Println(err)
+			}
+		} else {
 			fmt.Println(err)
 		}
 	}
