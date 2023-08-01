@@ -58,12 +58,12 @@ Once Docker is installed, run the provided commands to create a Docker image for
 2. **Navigate to Docker Directory**: Go to the docker directory inside the cloned repository:
 
    ```shell
-   cd docker
+   cd tools/docker
    ```
 3. **Build Docker Image and Start Container**: Use the setup script to build the Docker image named alterix-image:
 
    ```shell
-   ./setup_docker_alterix.sh
+   go run setup_docker_alterix.go /path/to/rules /path/to/config /path/to/output
    ```
    
    This script will handle the building of the Docker image and starting the container for you.
