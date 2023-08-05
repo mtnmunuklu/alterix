@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,6 +43,7 @@ func formatJSONResult(rule sigma.Rule, result map[int]string) []byte {
 		InsertDate     string   `json:"InsertDate"`
 		LastUpdateDate string   `json:"LastUpdateDate"`
 		Tags           []string `json:"Tags"`
+		Level          string   `json:"Level"`
 	}
 
 	// Create a strings.Builder variable named query.
@@ -64,6 +64,7 @@ func formatJSONResult(rule sigma.Rule, result map[int]string) []byte {
 		InsertDate:     time.Now().UTC().Format(time.RFC3339),
 		LastUpdateDate: time.Now().UTC().Format(time.RFC3339),
 		Tags:           rule.Tags,
+		Level:          rule.Level,
 	}
 
 	// Marshal the JSONResult struct into JSON data.
@@ -131,7 +132,7 @@ func main() {
 			}
 			if !info.IsDir() {
 				// read file content
-				content, err := ioutil.ReadFile(path)
+				content, err := os.ReadFile(path)
 				if err != nil {
 					fmt.Println("Error reading file:", err)
 					return nil
@@ -142,7 +143,7 @@ func main() {
 		})
 	} else {
 		// filePath is a file, so read its contents
-		fileContents[filePath], err = ioutil.ReadFile(filePath)
+		fileContents[filePath], err = os.ReadFile(filePath)
 		if err != nil {
 			fmt.Println("Error reading file:", err)
 			return
@@ -150,7 +151,7 @@ func main() {
 	}
 
 	// Read the contents of the configuration file
-	configContent, err := ioutil.ReadFile(configPath)
+	configContent, err := os.ReadFile(configPath)
 	if err != nil {
 		fmt.Println("Error reading configuration file:", err)
 		return
