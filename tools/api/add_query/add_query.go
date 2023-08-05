@@ -18,6 +18,7 @@ type QuerySettings struct {
 	Tags        []string `json:"Tags"`
 	Query       string   `json:"Query"`
 	Author      string   `json:"Author"`
+	Level       string   `json:"Level"`
 }
 
 type SavePayload struct {
@@ -79,12 +80,47 @@ func SaveRequest(xAPIKey, saveFullURL, method, responseDirectory string, savePay
 		return fmt.Errorf("error reading HTTP response: %w", err)
 	}
 
+	// Decode the JSON response
+	var jsonResponse map[string]interface{}
+	err = json.Unmarshal(body, &jsonResponse)
+	if err != nil {
+		return fmt.Errorf("error decoding JSON response: %w", err)
+	}
+
+	status, ok := jsonResponse["status"].(bool)
+	if !ok {
+		return fmt.Errorf("invalid JSON response: missing or invalid 'status' field")
+	}
+
+	if !status {
+		return fmt.Errorf("request failed: status is not true")
+	}
+
+	// Predefined mapping for severity levels
+	levelMapping := map[string]int{
+		"critical": 10,
+		"high":     8,
+		"medium":   7,
+		"Low":      6,
+		"info":     5,
+	}
+
+	// Get the value for savePayload.QuerySettings.Level
+	levelValue, exists := levelMapping[savePayload.QuerySettings.Level]
+	if !exists {
+		fmt.Printf("Level is invalid. Info level is used: %s", savePayload.QuerySettings.Level)
+		levelValue = 5
+	}
+
+	// Add the Level field to the final response data
+	jsonResponse["query"].(map[string]interface{})["RiskLevel"] = levelValue
+
 	// Create a filename using the value of the "Name" field
 	filename := fmt.Sprintf("%s.json", savePayload.QuerySettings.Name)
 
 	// Write the JSON response to a file
 	responseFilePath := filepath.Join(responseDirectory, filename)
-	err = writeJSONToFile(responseFilePath, body)
+	err = writeJSONToFile(responseFilePath, jsonResponse)
 	if err != nil {
 		return fmt.Errorf("error writing JSON response to file: %w", err)
 	}
@@ -141,15 +177,16 @@ func GetRequest(xAPIKey, getFullURL, method string, getPayload GetPayload) error
 	return nil
 }
 
-func writeJSONToFile(filename string, data []byte) error {
+func writeJSONToFile(filename string, data map[string]interface{}) error {
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	_, err = file.Write(data)
-	if err != nil {
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ") // Set indentation to 1 spaces
+	if err := encoder.Encode(data); err != nil {
 		return err
 	}
 
