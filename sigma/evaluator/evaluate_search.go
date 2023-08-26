@@ -221,9 +221,12 @@ func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Searc
 				fieldModifiers = fieldModifiers[:len(fieldModifiers)-1]
 			}
 
-			comparator, err := modifiers.GetComparator(fieldModifiers...)
-			if err != nil {
-				return filters, err
+			var comparator modifiers.ComparatorFunc
+			var err error
+			if rule.caseSensitive {
+				comparator, err = modifiers.GetComparatorCaseSensitive(fieldModifiers...)
+			} else {
+				comparator, err = modifiers.GetComparator(fieldModifiers...)
 			}
 
 			matcherValues, err := rule.getMatcherValues(ctx, fieldMatcher)

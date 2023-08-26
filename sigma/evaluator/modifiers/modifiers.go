@@ -9,6 +9,14 @@ import (
 )
 
 func GetComparator(modifiers ...string) (ComparatorFunc, error) {
+	return getComparator(Comparators, modifiers...)
+}
+
+func GetComparatorCaseSensitive(modifiers ...string) (ComparatorFunc, error) {
+	return getComparator(ComparatorsCaseSensitive, modifiers...)
+}
+
+func getComparator(comparators map[string]Comparator, modifiers ...string) (ComparatorFunc, error) {
 	if len(modifiers) == 0 {
 		return baseComparator{}.Alters, nil
 	}
@@ -19,13 +27,13 @@ func GetComparator(modifiers ...string) (ComparatorFunc, error) {
 	var valueModifiers []ValueModifier
 	var comparator Comparator
 	for i, modifier := range modifiers {
-		comparatorModifier := Comparators[modifier]
+		comparatorModifier := comparators[modifier]
 		valueModifier := ValueModifiers[modifier]
 		switch {
 		// Validate correctness
 		case comparatorModifier == nil && valueModifier == nil:
 			return nil, fmt.Errorf("unknown modifier %s", modifier)
-		case i < len(modifiers)-1 && Comparators[modifier] != nil:
+		case i < len(modifiers)-1 && comparators[modifier] != nil:
 			return nil, fmt.Errorf("comparator modifier %s must be the last modifier", modifier)
 
 		// Build up list of modifiers
@@ -76,6 +84,18 @@ var Comparators = map[string]Comparator{
 	"lte":        lte{},
 }
 
+var ComparatorsCaseSensitive = map[string]Comparator{
+	"contains":   containsCS{},
+	"endswith":   endswithCS{},
+	"startswith": startswithCS{},
+	"re":         re{},
+	"cidr":       cidr{},
+	"gt":         gt{},
+	"gte":        gte{},
+	"lt":         lt{},
+	"lte":        lte{},
+}
+
 var ValueModifiers = map[string]ValueModifier{
 	"base64": b64{},
 	"wide":   wide{},
@@ -89,36 +109,43 @@ func (baseComparator) Alters(field, value any) (string, error) {
 		return "", nil
 	default:
 		// The Sigma spec defines that by default comparisons are case-insensitive
-		return fmt.Sprintf("%v = '%v'", strings.ToLower(coerceString(field)), coerceString(value)), nil
+		return fmt.Sprintf("%v = '%v'", strings.ToLower(coerceString(field)), strings.ToLower(coerceString(value))), nil
 	}
 }
 
 type contains struct{}
 
 func (contains) Alters(field, value any) (string, error) {
-	return fmt.Sprintf("%v like '%%%v%%'", strings.ToLower(coerceString(field)), coerceString(value)), nil
-}
-
-func coerceString(v interface{}) string {
-	switch vv := v.(type) {
-	case string:
-		return vv
-	case []byte:
-		return string(vv)
-	default:
-		return fmt.Sprint(vv)
-	}
+	return fmt.Sprintf("%v like '%%%v%%'", strings.ToLower(coerceString(field)), strings.ToLower(coerceString(value))), nil
 }
 
 type endswith struct{}
 
 func (endswith) Alters(field, value any) (string, error) {
-	return fmt.Sprintf("%v like '%%%v'", strings.ToLower(coerceString(field)), coerceString(value)), nil
+	return fmt.Sprintf("%v like '%%%v'", strings.ToLower(coerceString(field)), strings.ToLower(coerceString(value))), nil
 }
 
 type startswith struct{}
 
 func (startswith) Alters(field, value any) (string, error) {
+	return fmt.Sprintf("%v like '%v%%'", strings.ToLower(coerceString(field)), strings.ToLower(coerceString(value))), nil
+}
+
+type containsCS struct{}
+
+func (containsCS) Alters(field, value any) (string, error) {
+	return fmt.Sprintf("%v like '%%%v%%'", strings.ToLower(coerceString(field)), coerceString(value)), nil
+}
+
+type endswithCS struct{}
+
+func (endswithCS) Alters(field, value any) (string, error) {
+	return fmt.Sprintf("%v like '%%%v'", strings.ToLower(coerceString(field)), coerceString(value)), nil
+}
+
+type startswithCS struct{}
+
+func (startswithCS) Alters(field, value any) (string, error) {
 	return fmt.Sprintf("%v like '%v%%'", strings.ToLower(coerceString(field)), coerceString(value)), nil
 }
 
@@ -173,4 +200,15 @@ func (wide) Modify(value any) (any, error) {
 		binary.LittleEndian.PutUint16(bytes[i*2:], r)
 	}
 	return coerceString(bytes), nil
+}
+
+func coerceString(v interface{}) string {
+	switch vv := v.(type) {
+	case string:
+		return vv
+	case []byte:
+		return string(vv)
+	default:
+		return fmt.Sprint(vv)
+	}
 }

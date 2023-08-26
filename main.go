@@ -15,12 +15,13 @@ import (
 )
 
 var (
-	filePath   string
-	configPath string
-	showHelp   bool
-	outputJSON bool
-	outputPath string
-	version    bool
+	filePath      string
+	configPath    string
+	showHelp      bool
+	outputJSON    bool
+	outputPath    string
+	version       bool
+	caseSensitive bool
 )
 
 // Set up the command-line flags
@@ -31,6 +32,7 @@ func init() {
 	flag.BoolVar(&outputJSON, "json", false, "Output results in JSON format")
 	flag.StringVar(&outputPath, "output", "", "Output directory for writing files")
 	flag.BoolVar(&version, "version", false, "Show version information")
+	flag.BoolVar(&caseSensitive, "cs", false, "Case sensitive mode")
 	flag.Parse()
 }
 
@@ -172,8 +174,16 @@ func main() {
 			continue
 		}
 
-		// Evaluate the Sigma rule against the config
-		r := evaluator.ForRule(rule, evaluator.WithConfig(config))
+		var r *evaluator.RuleEvaluator
+
+		if caseSensitive {
+			// Evaluate the Sigma rule against the config using case sensitive mode
+			r = evaluator.ForRule(rule, evaluator.WithConfig(config), evaluator.CaseSensitive)
+		} else {
+			// Evaluate the Sigma rule against the config
+			r = evaluator.ForRule(rule, evaluator.WithConfig(config))
+		}
+
 		ctx := context.Background()
 		result, err := r.Alters(ctx)
 		if err != nil {

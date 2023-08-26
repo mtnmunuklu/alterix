@@ -18,6 +18,7 @@ type RuleEvaluator struct {
 	fieldmappings   map[string][]string // A compiled mapping from rule fieldnames to possible event fieldnames
 
 	expandPlaceholder func(ctx context.Context, placeholderName string) ([]string, error) // A function to expand placeholders in the Sigma rule template
+	caseSensitive     bool
 }
 
 // ForRule constructs a new RuleEvaluator with the given Sigma rule and evaluation options.
