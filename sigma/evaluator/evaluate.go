@@ -79,8 +79,10 @@ func (rule RuleEvaluator) Alters(ctx context.Context) (Result, error) {
 		for _, condition := range conditionResult {
 			// If the condition matches any search identifier, replace it with the corresponding search results
 			if value, ok := result.SearchResults[condition]; ok {
-				if len(value) > 1 {
+				if len(conditionResult) > 1 {
 					conditionList = append(conditionList, "("+strings.Join(value, " and ")+")")
+				} else if len(value) > 1 {
+					conditionList = append(conditionList, strings.Join(value, " and "))
 				} else {
 					conditionList = append(conditionList, strings.Join(value, ""))
 				}
