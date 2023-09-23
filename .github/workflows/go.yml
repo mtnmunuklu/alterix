@@ -42,7 +42,10 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Build for ${{ matrix.platform }}
-        run: go build -o alterix
+        run: |
+          go build -o alterix
+          go build -o add_query ./tools/api/add_query
+          go build -o add_rule ./tools/api/add_rule
 
       - name: Test
         run: echo "No tests to run."
@@ -51,12 +54,14 @@ jobs:
         if: ${{ matrix.platform == 'windows-latest' }}
         run: |
           Rename-Item -Path ./alterix -NewName "alterix.exe"
-          powershell Compress-Archive -Path ./alterix.exe -DestinationPath alterix-${{ matrix.platform }}.zip
+          Rename-Item -Path ./add_query -NewName "add_query.exe"
+          Rename-Item -Path ./add_rule -NewName "add_rule.exe"
+          powershell Compress-Archive -Path ./alterix.exe, ./add_query.exe, ./add_rule.exe -DestinationPath alterix-${{ matrix.platform }}.zip
 
       - name: Create Zip Archive (Linux, macOS)
         if: ${{ matrix.platform != 'windows-latest' }}
         run: |
-          zip -r alterix-${{ matrix.platform }}.zip alterix
+          zip -r alterix-${{ matrix.platform }}.zip alterix add_query add_rule
 
       - name: Upload Assets
         if: ${{ github.event_name == 'release' }}
