@@ -35,21 +35,12 @@ func findForbiddenWords(query, forbiddenWords string) []string {
 		forbiddenNames[i] = strings.TrimSpace(name)
 	}
 
-	// Create a map to store the forbidden names for efficient lookup
-	forbiddenMap := make(map[string]struct{})
-	for _, name := range forbiddenNames {
-		forbiddenMap[name] = struct{}{}
-	}
-
-	// Split the query into words
-	words := strings.Fields(query)
-
 	// Find forbidden words in the query
 	forbiddens := []string{}
 
-	for _, word := range words {
-		if _, ok := forbiddenMap[word]; ok {
-			forbiddens = append(forbiddens, word)
+	for _, name := range forbiddenNames {
+		if strings.Contains(query, name) {
+			forbiddens = append(forbiddens, name)
 		}
 	}
 
