@@ -15,17 +15,17 @@ type Rule struct {
 	Detection Detection // The detection logic of the rule
 
 	// Optional fields
-	ID          string        `yaml:",omitempty"` // The unique ID of the rule
-	Related     []RelatedRule `yaml:",omitempty"` // Related rules, if any
-	Status      string        `yaml:",omitempty"` // The status of the rule (e.g. "testing", "production")
-	Description string        `yaml:",omitempty"` // A brief description of the rule
-	Author      string        `yaml:",omitempty"` // The author of the rule
-	Level       string        `yaml:",omitempty"` // The severity level of the rule (e.g. "low", "medium", "high")
-	References  []string      `yaml:",omitempty"` // References related to the rule
-	Tags        []string      `yaml:",omitempty"` // Tags that can be used to organize the rules
+	ID          string        `yaml:",omitempty" json:",omitempty"` // The unique ID of the rule
+	Related     []RelatedRule `yaml:",omitempty" json:",omitempty"` // Related rules, if any
+	Status      string        `yaml:",omitempty" json:",omitempty"` // The status of the rule (e.g. "testing", "production")
+	Description string        `yaml:",omitempty" json:",omitempty"` // A brief description of the rule
+	Author      string        `yaml:",omitempty" json:",omitempty"` // The author of the rule
+	Level       string        `yaml:",omitempty" json:",omitempty"` // The severity level of the rule (e.g. "low", "medium", "high")
+	References  []string      `yaml:",omitempty" json:",omitempty"` // References related to the rule
+	Tags        []string      `yaml:",omitempty" json:",omitempty"` // Tags that can be used to organize the rules
 
 	// Any non-standard fields will end up in here
-	AdditionalFields map[string]interface{} `yaml:",inline"` // Any additional fields in the YAML document
+	AdditionalFields map[string]interface{} `yaml:",inline,omitempty" json:",inline,omitempty"` // Any additional fields in the YAML document
 }
 
 type RelatedRule struct {
@@ -34,19 +34,19 @@ type RelatedRule struct {
 }
 
 type Logsource struct {
-	Category   string `yaml:",omitempty"` // The category of the log source
-	Product    string `yaml:",omitempty"` // The product associated with the log source
-	Service    string `yaml:",omitempty"` // The service associated with the log source
-	Definition string `yaml:",omitempty"` // The definition of the log source
+	Category   string `yaml:",omitempty" json:",omitempty"` // The category of the log source
+	Product    string `yaml:",omitempty" json:",omitempty"` // The product associated with the log source
+	Service    string `yaml:",omitempty" json:",omitempty"` // The service associated with the log source
+	Definition string `yaml:",omitempty" json:",omitempty"` // The definition of the log source
 
 	// Any non-standard fields will end up in here
-	AdditionalFields map[string]interface{} `yaml:",inline"` // Any additional fields in the YAML document
+	AdditionalFields map[string]interface{} `yaml:",inline,omitempty" json:",inline,omitempty"` // Any additional fields in the YAML document
 }
 
 type Detection struct {
-	Searches   map[string]Search `yaml:",inline"`    // Searches holds a map of search query strings and their corresponding configurations.
-	Conditions Conditions        `yaml:"condition"`  // Conditions holds a slice of conditions to be checked for the detection to occur.
-	Timeframe  time.Duration     `yaml:",omitempty"` // Timeframe specifies the time duration within which the detection must occur.
+	Searches   map[string]Search `yaml:",inline" json:",inline"`       // Searches holds a map of search query strings and their corresponding configurations.
+	Conditions Conditions        `yaml:"condition" json:"condition"`   // Conditions holds a slice of conditions to be checked for the detection to occur.
+	Timeframe  time.Duration     `yaml:",omitempty" json:",omitempty"` // Timeframe specifies the time duration within which the detection must occur.
 }
 
 func (d *Detection) UnmarshalYAML(node *yaml.Node) error {
@@ -143,9 +143,9 @@ func (c Conditions) MarshalYAML() (interface{}, error) {
 
 // Search defines a search criteria that can be used to match events.
 type Search struct {
-	node          *yaml.Node
-	Keywords      []string       // Keywords to search for
-	EventMatchers []EventMatcher // List of event matchers (maps of fields to values)
+	node          *yaml.Node     `yaml:",omitempty" json:",omitempty"`
+	Keywords      []string       `yaml:",omitempty" json:",omitempty"` // Keywords to search for
+	EventMatchers []EventMatcher `yaml:",omitempty" json:",omitempty"` // List of event matchers (maps of fields to values)
 }
 
 // Position returns the line and column of this Search in the original input
@@ -257,10 +257,10 @@ func (f EventMatcher) MarshalYAML() (interface{}, error) {
 
 // FieldMatcher defines a matcher for a single field
 type FieldMatcher struct {
-	node      *yaml.Node
-	Field     string
-	Modifiers []string
-	Values    []interface{}
+	node      *yaml.Node    `yaml:",omitempty" json:",omitempty"`
+	Field     string        `yaml:",omitempty" json:",omitempty"`
+	Modifiers []string      `yaml:",omitempty" json:",omitempty"`
+	Values    []interface{} `yaml:",omitempty" json:",omitempty"`
 }
 
 // Position returns the line and column of this FieldMatcher in the original input

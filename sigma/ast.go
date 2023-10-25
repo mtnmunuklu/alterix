@@ -9,9 +9,9 @@ import (
 )
 
 type Condition struct {
-	node        *yaml.Node
-	Search      SearchExpr      // represents the search query
-	Aggregation AggregationExpr // represents the aggregation operation
+	node        *yaml.Node      `yaml:",omitempty" json:",omitempty"`
+	Search      SearchExpr      `yaml:",omitempty" json:",omitempty"` // represents the search query
+	Aggregation AggregationExpr `yaml:",omitempty" json:",omitempty"` // represents the aggregation operation
 }
 
 // This function is used to convert a Condition struct to YAML format.
