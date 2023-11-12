@@ -109,7 +109,7 @@ If the json flag is provided, Alterix will convert the Sigma rules to JSON forma
 
 ## Contributing
 
-Contributions to Alterix are welcome and encouraged! Please read the [contribution guidelines](contributing.md) before making any contributions to the project.
+Contributions to Alterix are welcome and encouraged! Please read the [contribution guidelines](CONTRIBUTING.md) before making any contributions to the project.
 
 ## Acknowledgements
 
@@ -135,7 +135,7 @@ We would like to express our gratitude to the following sponsors for their gener
 </div>
 
 
-If you are interested in becoming a sponsor, please visit our [GitHub Sponsors](https://github.com/sponsors) page.
+If you are interested in becoming a sponsor, please visit our [GitHub Sponsors](https://github.com/sponsors/mtnmunuklu) page.
 
 ## License
 
