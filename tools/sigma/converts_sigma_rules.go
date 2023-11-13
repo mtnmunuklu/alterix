@@ -18,7 +18,7 @@ const (
 	repositoryOwner  = "SigmaHQ"
 	repositoryName   = "sigma"
 	projectFolder    = "sigma_project"
-	sigmaRulesFolder = "rules"
+	sigmaRulesFolder = "/opt/alterix/sigma_project/rules"
 )
 
 // RuleInfo stores information about a rule
@@ -143,10 +143,12 @@ func GetPreviousFiles() map[string]RuleInfo {
 			fmt.Println("Error reading previous files:", err)
 			os.Exit(1)
 		}
-		err = json.Unmarshal(data, &previousFiles)
-		if err != nil {
-			fmt.Println("Error decoding previous files:", err)
-			os.Exit(1)
+		if len(data) > 0 {
+			err = json.Unmarshal(data, &previousFiles)
+			if err != nil {
+				fmt.Println("Error decoding previous files:", err)
+				os.Exit(1)
+			}
 		}
 	}
 	return previousFiles
