@@ -88,6 +88,10 @@ To convert Sigma rules to the query language of CRYPTTECH's SIEM product in your
     ```shell
     ./alterix -filepath <path-to-rules> -config <path-to-config> [-json] [-output <output-directory>]
     ```
+    or
+    ```shell
+    ./alterix -filecontent <content-to-rules> -configcontent <content-to-config> [-json] [-output <output-directory>]
+    ```
 
 ### Docker Usage
 
@@ -96,16 +100,26 @@ If you have installed Alterix using Docker, you can use the following command to
 ```shell
 docker exec alterix ./alterix -filepath <path-to-rules> -config <path-to-config> [-json] [-output <output-directory>]
 ```
+or
+```shell
+docker exec alterix ./alterix -filecontent <content-to-rules> -configcontent <content-to-config> [-json] [-output <output-directory>]
+```
 
 The `filepath` flag specifies the location of the Sigma rules. This can be a file or directory path.
 
+The `filecontent` flag allows you to provide the Base64-encoded content of Sigma rules directly as a string.
+
 The `config` flag specifies the location of the configuration file for CRYPTTECH's SIEM product.
+
+The `configcontent` flag allows you to provide the Base64-encoded content of the configuration file directly as a string.
 
 The `json` flag indicates that the output should be in JSON format.
 
 The `output` flag specifies the directory where the output files should be written.
 
 If the json flag is provided, Alterix will convert the Sigma rules to JSON format. If the output flag is provided, Alterix will save the output files to the specified directory. If neither flag is provided, the output will be displayed in the console.
+
+
 
 ## Contributing
 
