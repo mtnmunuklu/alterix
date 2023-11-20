@@ -78,7 +78,7 @@ func SaveRequest(xAPIKey, saveFullURL, method, responseDirectory string, savePay
 	client := &http.Client{Transport: transport}
 	// Send HTTP request and get the response
 	res, err := client.Do(req)
-	if err != nil {
+	if err != nil || res.StatusCode != 200 {
 		return fmt.Errorf("error sending HTTP request: %w", err)
 	}
 	defer res.Body.Close()
@@ -95,13 +95,9 @@ func SaveRequest(xAPIKey, saveFullURL, method, responseDirectory string, savePay
 		return fmt.Errorf("error decoding JSON response: %w", err)
 	}
 
-	status, ok := jsonResponse["status"].(bool)
+	_, ok := jsonResponse["Status"].(bool)
 	if !ok {
-		return fmt.Errorf("invalid JSON response: missing or invalid 'status' field")
-	}
-
-	if !status {
-		return fmt.Errorf("request failed: status is not true")
+		return fmt.Errorf("invalid JSON response: missing or invalid 'Status' field")
 	}
 
 	// Create a filename using the value of the "Name" field
@@ -137,7 +133,7 @@ func GetRequest(xAPIKey, getFullURL, method string, getPayload GetPayload) error
 	client := &http.Client{Transport: transport}
 	// Send HTTP request and get the response
 	res, err := client.Do(req)
-	if err != nil {
+	if err != nil || res.StatusCode != 200 {
 		return fmt.Errorf("error sending HTTP request: %w", err)
 	}
 	defer res.Body.Close()
@@ -184,40 +180,73 @@ func processJSONPayload(payload map[string]interface{}) (SavePayload, GetPayload
 	var savePayload SavePayload
 	var getPayload GetPayload
 
-	savePayload.Correlation.Name = payload["query"].(map[string]interface{})["Name"].(string)
-	savePayload.Correlation.Description = payload["query"].(map[string]interface{})["Description"].(string)
-	savePayload.Correlation.Tags = toStringSlice(payload["query"].(map[string]interface{})["Tags"].([]interface{}))
-	savePayload.Correlation.MaxAlertCount = 5
-	savePayload.Correlation.RiskLevel = int(payload["query"].(map[string]interface{})["RiskLevel"].(float64))
-	savePayload.Correlation.CorrelationType = "Interface IQueryCorrelation"
-	savePayload.Correlation.Data.TimeFrameValue = 5
-	savePayload.Correlation.Data.TimeFrameType = "minutes"
-	savePayload.Correlation.Data.RuleType = "any"
-	savePayload.Correlation.Data.QueryCorrelationAlertType = "WhenOneOrMoreRow"
-	savePayload.Correlation.Data.QueryID = payload["query"].(map[string]interface{})["ID"].(string)
-	savePayload.Correlation.Data.Query = payload["query"].(map[string]interface{})["Query"].(string)
-	savePayload.Correlation.Enabled = true
-	savePayload.Correlation.Message = savePayload.Correlation.Name
+	if query, ok := payload["query"].(map[string]interface{}); ok {
+		savePayload.Correlation.Name = getStringFromMap(query, "Name")
+		savePayload.Correlation.Description = getStringFromMap(query, "Description")
+
+		// Check if "Tags" exists in the map and is not nil
+		if tags, ok := query["Tags"].([]interface{}); ok && tags != nil {
+			savePayload.Correlation.Tags = toStringSlice(tags)
+		} else {
+			savePayload.Correlation.Tags = []string{}
+		}
+
+		savePayload.Correlation.MaxAlertCount = 5
+		savePayload.Correlation.RiskLevel = getIntFromMap(query, "RiskLevel")
+		savePayload.Correlation.CorrelationType = "Interface IQueryCorrelation"
+		savePayload.Correlation.Data.TimeFrameValue = 5
+		savePayload.Correlation.Data.TimeFrameType = "minutes"
+		savePayload.Correlation.Data.RuleType = "any"
+		savePayload.Correlation.Data.QueryCorrelationAlertType = "WhenOneOrMoreRow"
+		savePayload.Correlation.Data.QueryID = getStringFromMap(query, "ID")
+		savePayload.Correlation.Data.Query = getStringFromMap(query, "Query")
+		savePayload.Correlation.Enabled = false
+		savePayload.Correlation.Message = savePayload.Correlation.Name
+	} else {
+		fmt.Println("Error: Unable to parse 'query' from payload.")
+	}
 	// Update the SmartRestRequestContext field in the payload
 	savePayload.SmartRestRequestContext = "-<SmartRestRequestContext>-"
 
-	getPayload.Filter = savePayload.Correlation.Name
+	getPayload.Filter = `"` + savePayload.Correlation.Name + `"`
 	getPayload.SmartRestRequestContext = "-<SmartRestRequestContext>-"
 
 	return savePayload, getPayload, nil
 }
 
-func toStringSlice(data []interface{}) []string {
-	result := make([]string, len(data))
-	for i, val := range data {
-		result[i] = val.(string)
+// getStringFromMap retrieves a string value from a map with error handling
+func getStringFromMap(m map[string]interface{}, key string) string {
+	if value, ok := m[key].(string); ok {
+		return value
+	}
+	return "" // or handle the case where the value is not a string
+}
+
+// getIntFromMap retrieves an integer value from a map with error handling
+func getIntFromMap(m map[string]interface{}, key string) int {
+	if value, ok := m[key].(float64); ok {
+		return int(value)
+	}
+	return 0 // or handle the case where the value is not a float64
+}
+
+// toStringSlice converts an []interface{} to a []string
+func toStringSlice(slice []interface{}) []string {
+	result := make([]string, len(slice))
+	for i, v := range slice {
+		if str, ok := v.(string); ok {
+			result[i] = str
+		} else {
+			// Handle the case where an element in the slice is not a string
+			result[i] = "" // or return an error, depending on your requirements
+		}
 	}
 	return result
 }
 
 func main() {
 	if xAPIKey == "" || jsonFilePath == "" || urlHostname == "" || responseDirectory == "" {
-		fmt.Println("Usage: go run main.go -x-api-key <xAPIKey> -json-file-path <jsonFilePath> -url-hostname <urlHostname> -response-file-dir <responseDirectory>")
+		fmt.Println("Usage: go run add_rule.go -x-api-key <xAPIKey> -json-file-path <jsonFilePath> -url-hostname <urlHostname> -response-file-dir <responseDirectory>")
 		flag.PrintDefaults()
 		return
 	}

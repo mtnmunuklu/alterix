@@ -70,7 +70,7 @@ func SaveRequest(xAPIKey, saveFullURL, method, responseDirectory string, savePay
 	client := &http.Client{Transport: transport}
 	// Send HTTP request and get the response
 	res, err := client.Do(req)
-	if err != nil {
+	if err != nil || res.StatusCode != 200 {
 		return fmt.Errorf("error sending HTTP request: %w", err)
 	}
 	defer res.Body.Close()
@@ -101,7 +101,7 @@ func SaveRequest(xAPIKey, saveFullURL, method, responseDirectory string, savePay
 		"critical": 10,
 		"high":     8,
 		"medium":   7,
-		"Low":      6,
+		"low":      6,
 		"info":     5,
 	}
 
@@ -150,7 +150,7 @@ func GetRequest(xAPIKey, getFullURL, method string, getPayload GetPayload) error
 	client := &http.Client{Transport: transport}
 	// Send HTTP request and get the response
 	res, err := client.Do(req)
-	if err != nil {
+	if err != nil || res.StatusCode != 200 {
 		return fmt.Errorf("error sending HTTP request: %w", err)
 	}
 	defer res.Body.Close()
@@ -196,7 +196,7 @@ func writeJSONToFile(filename string, data map[string]interface{}) error {
 func main() {
 
 	if xAPIKey == "" || jsonFilePath == "" || urlHostname == "" || responseDirectory == "" || author == "" {
-		fmt.Println("Usage: go run main.go -x-api-key <xAPIKey> -json-file-path <jsonFilePath> -url-hostname <urlHostname> -response-file-dir <responseDirectory> -author <author>")
+		fmt.Println("Usage: go run add_query.go -x-api-key <xAPIKey> -json-file-path <jsonFilePath> -url-hostname <urlHostname> -response-file-dir <responseDirectory> -author <author>")
 		flag.PrintDefaults()
 		return
 	}
@@ -236,7 +236,7 @@ func main() {
 				savePayload.SmartRestRequestContext = "-<SmartRestRequestContext>-"
 
 				getPayload.Username = author
-				getPayload.Filter = savePayload.QuerySettings.Name
+				getPayload.Filter = `"` + savePayload.QuerySettings.Name + `"`
 				getPayload.SmartRestRequestContext = "-<SmartRestRequestContext>-"
 
 				saveFullURL := fmt.Sprintf("https://%s%s", urlHostname, saveURLPath)
@@ -279,7 +279,7 @@ func main() {
 		savePayload.SmartRestRequestContext = "-<SmartRestRequestContext>-"
 
 		getPayload.Username = author
-		getPayload.Filter = savePayload.QuerySettings.Name
+		getPayload.Filter = `"` + savePayload.QuerySettings.Name + `"`
 		getPayload.SmartRestRequestContext = "-<SmartRestRequestContext>-"
 
 		saveFullURL := fmt.Sprintf("https://%s%s", urlHostname, saveURLPath)
