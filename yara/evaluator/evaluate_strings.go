@@ -67,6 +67,11 @@ var operators = map[pb.BinaryExpression_Operator]string{
 	pb.BinaryExpression_MOD:         "%",
 }
 
+var keywords = map[pb.Keyword]string{
+	pb.Keyword_ENTRYPOINT: "entrypoint",
+	pb.Keyword_FILESIZE:   "filesize",
+}
+
 var forKeywords = map[pb.ForKeyword]string{
 	pb.ForKeyword_NONE: "none",
 	pb.ForKeyword_ALL:  "all",
@@ -75,6 +80,12 @@ var forKeywords = map[pb.ForKeyword]string{
 
 var stringSetKeywords = map[pb.StringSetKeyword]string{
 	pb.StringSetKeyword_THEM: "them",
+}
+
+var unaryOperators = map[pb.UnaryExpression_Operator]string{
+	pb.UnaryExpression_BITWISE_NOT: "~",
+	pb.UnaryExpression_UNARY_MINUS: "-",
+	pb.UnaryExpression_DEFINED:     "defined",
 }
 
 func getExpressionPrecedence(expression *pb.Expression) int8 {
@@ -493,9 +504,14 @@ func (rule RuleEvaluator) evaluateExpression(condition *strings.Builder, express
 		if err := rule.serializeBinaryExpression(condition, expression.GetBinaryExpression()); err != nil {
 			return err
 		}
-	case *pb.Expression_Range:
-		fmt.Println("Range:", v.Range)
-		if err := rule.serializeRange(condition, expression.GetRange()); err != nil {
+	case *pb.Expression_UnaryExpression:
+		fmt.Println("UnaryExpression:", v.UnaryExpression)
+		if err := rule.serializeUnaryExpression(condition, expression.GetUnaryExpression()); err != nil {
+			return err
+		}
+	case *pb.Expression_NumberValue:
+		fmt.Println("NumberValue:", v.NumberValue)
+		if _, err := condition.WriteString(fmt.Sprintf("%d", expression.GetNumberValue())); err != nil {
 			return err
 		}
 	case *pb.Expression_Text:
@@ -514,9 +530,54 @@ func (rule RuleEvaluator) evaluateExpression(condition *strings.Builder, express
 		if _, err := condition.WriteString(fmt.Sprintf("%f", expression.GetDoubleValue())); err != nil {
 			return err
 		}
-	case *pb.Expression_NumberValue:
-		fmt.Println("NumberValue:", v.NumberValue)
-		if _, err := condition.WriteString(fmt.Sprintf("%d", expression.GetNumberValue())); err != nil {
+	case *pb.Expression_Range:
+		fmt.Println("Range:", v.Range)
+		if err := rule.serializeRange(condition, expression.GetRange()); err != nil {
+			return err
+		}
+	case *pb.Expression_Keyword:
+		fmt.Println("Keyword:", v.Keyword)
+		if err := rule.serializeKeyword(condition, expression.GetKeyword()); err != nil {
+			return err
+		}
+	case *pb.Expression_Identifier:
+		fmt.Println("Identifier:", v.Identifier)
+		if err := rule.serializeIdentifier(condition, expression.GetIdentifier()); err != nil {
+			return err
+		}
+	case *pb.Expression_Regexp:
+		fmt.Println("Regexp:", v.Regexp)
+		if err := rule.serializeRegexp(condition, expression.GetRegexp()); err != nil {
+			return err
+		}
+	case *pb.Expression_NotExpression:
+		fmt.Println("NotExpression:", v.NotExpression)
+		if err := rule.serializeNotExpression(condition, expression.GetNotExpression()); err != nil {
+			return err
+		}
+	case *pb.Expression_IntegerFunction:
+		fmt.Println("IntegerFunction:", v.IntegerFunction)
+		if err := rule.serializeIntegerFunction(condition, expression.GetIntegerFunction()); err != nil {
+			return err
+		}
+	case *pb.Expression_StringOffset:
+		fmt.Println("StringOffset:", v.StringOffset)
+		if err := rule.serializeStringOffset(condition, expression.GetStringOffset()); err != nil {
+			return err
+		}
+	case *pb.Expression_StringLength:
+		fmt.Println("StringLength:", v.StringLength)
+		if err := rule.serializeStringLength(condition, expression.GetStringLength()); err != nil {
+			return err
+		}
+	case *pb.Expression_StringCount:
+		fmt.Println("StringCount:", v.StringCount)
+		if _, err := condition.WriteString(expression.GetStringCount()); err != nil {
+			return err
+		}
+	case *pb.Expression_PercentageExpression:
+		fmt.Println("PercentageExpression:", v.PercentageExpression)
+		if err := rule.serializePercentageExpression(condition, expression.GetPercentageExpression()); err != nil {
 			return err
 		}
 	default:
@@ -901,6 +962,137 @@ func (rule RuleEvaluator) serializeRuleEnumeration(condition *strings.Builder, e
 	}
 
 	if _, err := condition.WriteString(")"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (rule RuleEvaluator) serializeUnaryExpression(condition *strings.Builder, expression *pb.UnaryExpression) error {
+	op, ok := unaryOperators[expression.GetOperator()]
+	if !ok {
+		return fmt.Errorf(`unknown unary operator "%v"`, expression.GetOperator())
+	}
+
+	if _, err := condition.WriteString(op); err != nil {
+		return err
+	}
+
+	// If the operator is "defined" it is followed by a space. Other unary
+	// operators like "-" and "~" are immediately followed by the operand,
+	// without any spaces in between.
+	if expression.GetOperator() == pb.UnaryExpression_DEFINED {
+		if _, err := condition.WriteString(" "); err != nil {
+			return err
+		}
+	}
+
+	return rule.evaluateExpression(condition, expression.GetExpression())
+}
+
+func (rule RuleEvaluator) serializeKeyword(condition *strings.Builder, expression pb.Keyword) error {
+	kw, ok := keywords[expression]
+	if !ok {
+		return fmt.Errorf(`unknown keyword "%v"`, expression)
+	}
+
+	if _, err := condition.WriteString(kw); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (rule RuleEvaluator) serializeNotExpression(condition *strings.Builder, expression *pb.Expression) error {
+	if _, err := condition.WriteString("not "); err != nil {
+		return err
+	}
+
+	if getExpressionPrecedence(expression) < precedenceNotExpression {
+		if _, err := condition.WriteString("("); err != nil {
+			return err
+		}
+	}
+
+	if err := rule.evaluateExpression(condition, expression); err != nil {
+		return err
+	}
+
+	if getExpressionPrecedence(expression) < precedenceNotExpression {
+		if _, err := condition.WriteString(")"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (rule RuleEvaluator) serializeIntegerFunction(condition *strings.Builder, expression *pb.IntegerFunction) error {
+	if _, err := condition.WriteString(expression.GetFunction()); err != nil {
+		return err
+	}
+
+	if _, err := condition.WriteString("("); err != nil {
+		return err
+	}
+
+	if err := rule.evaluateExpression(condition, expression.GetArgument()); err != nil {
+		return err
+	}
+
+	if _, err := condition.WriteString(")"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (rule RuleEvaluator) serializeStringOffset(condition *strings.Builder, expression *pb.StringOffset) error {
+
+	if _, err := condition.WriteString(expression.GetStringIdentifier()); err != nil {
+		return err
+	}
+
+	if expression.GetIndex() != nil {
+		if _, err := condition.WriteString("["); err != nil {
+			return err
+		}
+		if err := rule.evaluateExpression(condition, expression.GetIndex()); err != nil {
+			return err
+		}
+		if _, err := condition.WriteString("]"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (rule RuleEvaluator) serializeStringLength(condition *strings.Builder, expression *pb.StringLength) error {
+
+	if _, err := condition.WriteString(expression.GetStringIdentifier()); err != nil {
+		return err
+	}
+
+	if expression.GetIndex() != nil {
+		if _, err := condition.WriteString("["); err != nil {
+			return err
+		}
+		if err := rule.evaluateExpression(condition, expression.GetIndex()); err != nil {
+			return err
+		}
+		if _, err := condition.WriteString("]"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (rule RuleEvaluator) serializePercentageExpression(condition *strings.Builder, expression *pb.Percentage) error {
+	if err := rule.evaluateExpression(condition, expression.Expression); err != nil {
+		return err
+	}
+	if _, err := condition.WriteString("%"); err != nil {
 		return err
 	}
 	return nil
