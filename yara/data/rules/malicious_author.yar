@@ -12,5 +12,5 @@ rule malicious_author : PDF raw
 		$reg1 = /Title.?\(who cis\)/
 		$reg2 = /Author.?\(ser pes\)/
 	condition:
-		$magic in (0..1024) and all of ($reg*)
+		a startswith "4"
 }

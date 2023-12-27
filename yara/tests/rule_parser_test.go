@@ -13,7 +13,7 @@ import (
 )
 
 func TestParseRule(t *testing.T) {
-	yara_rule, err := os.Open("../data/rules/any_of.yar")
+	yara_rule, err := os.Open("../data/rules/malicious_author.yar")
 	if err != nil {
 		fmt.Println("Error opening the file: ", err)
 	}

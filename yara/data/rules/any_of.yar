@@ -1,7 +1,7 @@
 rule foo {
   strings:
     $a = "foo"
-    $b = "bar"
+    $a2 = "foo2"
   condition:
-    any of ($a*)
+    none of ($a*)
 }

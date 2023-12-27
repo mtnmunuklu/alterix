@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"path"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/VirusTotal/gyp/pb"
@@ -496,7 +499,11 @@ func (rule RuleEvaluator) evaluateExpression(condition *strings.Builder, express
 		}
 	case *pb.Expression_ForOfExpression:
 		fmt.Println("ForOfExpression:", v.ForOfExpression)
-		if err := rule.serializeForOfExpression(condition, expression.GetForOfExpression()); err != nil {
+		var forOfCondition strings.Builder
+		if err := rule.serializeForOfExpression(&forOfCondition, expression.GetForOfExpression()); err != nil {
+			return err
+		}
+		if err := rule.processForOfCondition(&forOfCondition, condition, rule.getStringIdentifiers()); err != nil {
 			return err
 		}
 	case *pb.Expression_BinaryExpression:
@@ -582,7 +589,7 @@ func (rule RuleEvaluator) evaluateExpression(condition *strings.Builder, express
 		}
 	default:
 		// If an unknown type is encountered, perform actions here
-		fmt.Println("Unknown type")
+		fmt.Println("Unsupported type")
 	}
 
 	return nil
@@ -917,9 +924,26 @@ func (rule RuleEvaluator) serializeStringEnumeration(condition *strings.Builder,
 	}
 
 	for i, item := range expression.GetItems() {
-		if _, err := condition.WriteString(item.GetStringIdentifier()); err != nil {
+		if item.HasWildcard != nil && *item.HasWildcard {
+			var matchesIdentifiers []string
+			for _, str := range rule.Strings {
+				matchesPattern, _ := path.Match(item.GetStringIdentifier(), "$"+str.GetIdentifier())
+				if matchesPattern {
+					matchesIdentifiers = append(matchesIdentifiers, "$"+str.GetIdentifier())
+				}
+			}
+			if len(matchesIdentifiers) > 0 {
+				if _, err := condition.WriteString(strings.Join(matchesIdentifiers, ", ")); err != nil {
+					return err
+				}
+			} else if _, err := condition.WriteString(item.GetStringIdentifier()); err != nil {
+				return err
+			}
+
+		} else if _, err := condition.WriteString(item.GetStringIdentifier()); err != nil {
 			return err
 		}
+
 		if i < len(expression.GetItems())-1 {
 			if _, err := condition.WriteString(", "); err != nil {
 				return err
@@ -1096,4 +1120,233 @@ func (rule RuleEvaluator) serializePercentageExpression(condition *strings.Build
 		return err
 	}
 	return nil
+}
+
+func (rule RuleEvaluator) processForOfCondition(forOfCondition *strings.Builder, condition *strings.Builder, stringsList []string) error {
+	switch forOfCondition.String() {
+	case "any of them":
+		return rule.processAnyOfThem(condition, stringsList)
+	case "all of them":
+		return rule.processAllOfThem(condition, stringsList)
+	case "none of them":
+		return rule.processNoneOfThem(condition, stringsList)
+	default:
+		if strings.HasPrefix(forOfCondition.String(), "all of (") {
+			return rule.processComplexCondition(forOfCondition, condition, stringsList, rule.processAllOfThem)
+		} else if strings.HasPrefix(forOfCondition.String(), "any of (") {
+			return rule.processComplexCondition(forOfCondition, condition, stringsList, rule.processAnyOfThem)
+		} else if strings.HasPrefix(forOfCondition.String(), "none of (") {
+			return rule.processComplexCondition(forOfCondition, condition, stringsList, rule.processNoneOfThem)
+		} else if strings.HasSuffix(forOfCondition.String(), "of them") {
+			return rule.processNOfThemCondition(forOfCondition, condition, stringsList)
+		} else if strings.Contains(forOfCondition.String(), "of (") && strings.HasSuffix(forOfCondition.String(), ")") {
+			return rule.processNOfThemConditionWithParenthesis(forOfCondition, condition, stringsList)
+		}
+		condition.WriteString(forOfCondition.String())
+		return nil
+	}
+}
+
+func (rule RuleEvaluator) processAnyOfThem(condition *strings.Builder, stringsList []string) error {
+	rule.processOr(condition, stringsList)
+	return nil
+}
+
+func (rule RuleEvaluator) processAllOfThem(condition *strings.Builder, stringsList []string) error {
+	rule.processAnd(condition, stringsList)
+	return nil
+}
+
+func (rule RuleEvaluator) processNoneOfThem(condition *strings.Builder, stringsList []string) error {
+	condition.WriteString("not ")
+	rule.processAnd(condition, stringsList)
+	return nil
+}
+
+func (rule RuleEvaluator) processNOfThemCondition(forOfCondition, condition *strings.Builder, stringsList []string) error {
+	numStr := forOfCondition.String()
+	if ofIndex := strings.Index(numStr, " "); ofIndex > 0 {
+		numStr = numStr[:ofIndex]
+		if num, err := strconv.Atoi(numStr); err == nil {
+			if num <= len(stringsList) && num > 0 {
+				rule.processNOfThem(num, condition, stringsList)
+				return nil
+			} else if num == 0 {
+				return fmt.Errorf("'of them' number must be greater than 0")
+			} else {
+				return fmt.Errorf("number in 'of them' is greater than the size of the string identifier list")
+			}
+		}
+	}
+	condition.WriteString(forOfCondition.String())
+	return nil
+}
+
+func (rule RuleEvaluator) processNOfThemConditionWithParenthesis(forOfCondition, condition *strings.Builder, stringsList []string) error {
+	openIndex := strings.Index(forOfCondition.String(), "(")
+	closeIndex := strings.LastIndex(forOfCondition.String(), ")")
+	if openIndex < 0 || closeIndex < 0 || closeIndex < openIndex {
+		return fmt.Errorf("malformed condition: %s", forOfCondition.String())
+	}
+
+	numStr := forOfCondition.String()
+	fmt.Println(numStr)
+
+	if ofIndex := strings.Index(numStr, " "); ofIndex > 0 {
+		numStr = numStr[:ofIndex]
+		if num, err := strconv.Atoi(numStr); err == nil {
+			// Extract the content within the parentheses
+			content := forOfCondition.String()[openIndex+1 : closeIndex]
+
+			// Split the content into a list of strings
+			subStringsList, err := rule.parseComplexCondition(content, stringsList)
+			if err != nil {
+				return err
+			}
+
+			// Process the condition based on the extracted list
+			rule.processNOfThem(num, condition, subStringsList)
+			return nil
+		}
+	}
+	condition.WriteString(forOfCondition.String())
+	return nil
+}
+
+func (rule RuleEvaluator) processOr(condition *strings.Builder, stringsList []string) {
+	var result strings.Builder
+	result.WriteString("(")
+
+	for _, str := range stringsList {
+		result.WriteString(str)
+		result.WriteString(" or ")
+	}
+
+	resultStr := result.String()
+	resultStr = resultStr[:len(resultStr)-4]
+
+	condition.WriteString(resultStr)
+	condition.WriteString(")")
+}
+
+func (rule RuleEvaluator) processAnd(condition *strings.Builder, stringsList []string) {
+	var result strings.Builder
+	result.WriteString("(")
+
+	for i, str := range stringsList {
+		result.WriteString(str)
+		if i < len(stringsList)-1 {
+			result.WriteString(" and ")
+		}
+	}
+
+	resultStr := result.String()
+	condition.WriteString(resultStr)
+	condition.WriteString(")")
+}
+
+func (rule RuleEvaluator) processComplexCondition(forOfCondition, condition *strings.Builder, stringsList []string, processor func(*strings.Builder, []string) error) error {
+	openIndex := strings.Index(forOfCondition.String(), "(")
+	closeIndex := strings.LastIndex(forOfCondition.String(), ")")
+	if openIndex < 0 || closeIndex < 0 || closeIndex < openIndex {
+		return fmt.Errorf("malformed condition: %s", forOfCondition.String())
+	}
+
+	subCondition := forOfCondition.String()[openIndex+1 : closeIndex]
+	subCondition = rule.cleanCondition(subCondition)
+
+	subStringsList, err := rule.parseComplexCondition(subCondition, stringsList)
+	if err != nil {
+		return err
+	}
+
+	return processor(condition, subStringsList)
+}
+
+func (rule RuleEvaluator) parseComplexCondition(condition string, stringsList []string) ([]string, error) {
+	parts := strings.Split(condition, ",")
+	var result []string
+
+	for _, part := range parts {
+		part = rule.cleanCondition(part)
+		found := false
+		for _, str := range stringsList {
+			if part == str {
+				result = append(result, str)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("string identifier '%s' not found in the list", part)
+		}
+	}
+
+	return result, nil
+}
+
+func (rule RuleEvaluator) processNOfThem(num int, condition *strings.Builder, stringsList []string) {
+	if num == 1 {
+		rule.processAnyOfThem(condition, stringsList)
+	} else if num == len(stringsList) {
+		rule.processAllOfThem(condition, stringsList)
+	} else {
+		rule.processCombination(num, condition, stringsList)
+	}
+}
+
+func (rule RuleEvaluator) processCombination(num int, condition *strings.Builder, stringsList []string) {
+	keys := make([]string, 0, len(stringsList))
+	keys = append(keys, stringsList...)
+	sort.Strings(keys)
+
+	var combinations []string
+	rule.generateCombination(num, keys, 0, "", &combinations)
+
+	condition.WriteString("(")
+
+	for i, combination := range combinations {
+		if i > 0 {
+			condition.WriteString(" or ")
+		}
+		var andBuilder strings.Builder
+		andBuilder.WriteString("(")
+		for i, strIndex := range combination {
+			index, _ := strconv.Atoi(string(strIndex))
+			andBuilder.WriteString(stringsList[index])
+			if i < len(combination)-1 {
+				andBuilder.WriteString(" and ")
+			}
+		}
+		andBuilder.WriteString(")")
+		condition.WriteString(andBuilder.String())
+
+	}
+
+	condition.WriteString(")")
+}
+
+func (rule RuleEvaluator) generateCombination(num int, keys []string, index int, current string, combinations *[]string) {
+	if num == 0 {
+		*combinations = append(*combinations, current)
+		return
+	}
+
+	for i := index; i <= len(keys)-num; i++ {
+		rule.generateCombination(num-1, keys, i+1, current+strconv.Itoa(i), combinations)
+	}
+}
+
+func (rule RuleEvaluator) cleanCondition(condition string) string {
+	return strings.ReplaceAll(condition, " ", "")
+}
+
+func (rule RuleEvaluator) getStringIdentifiers() []string {
+	var identifiers []string
+
+	for _, str := range rule.Strings {
+		identifiers = append(identifiers, "$"+str.GetIdentifier())
+	}
+
+	return identifiers
 }
