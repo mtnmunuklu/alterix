@@ -33,7 +33,7 @@ func ForRule(rule *ast.Rule, options ...Option) *RuleEvaluator {
 // It contains the search, condition, aggregation, and query results of the rule evaluation.
 type Result struct {
 	StringsResults  map[string]string // The map of strings identifiers to their result values
-	ConditionResult []string          // The map of condition indices to their result values
+	ConditionResult string            // The map of condition indices to their result values
 	QueryResult     string            // The map of query indices to their result values
 }
 
@@ -60,7 +60,14 @@ func (rule RuleEvaluator) Alters(ctx context.Context) (Result, error) {
 		return Result{}, fmt.Errorf("error evaluating expression: %w", err)
 	}
 
-	result.ConditionResult = strings.Fields(condition.String())
+	result.ConditionResult = condition.String()
+	for key, value := range result.StringsResults {
+		if strings.Contains(result.ConditionResult, "$"+key) {
+			result.ConditionResult = strings.ReplaceAll(result.ConditionResult, "$"+key, value)
+		}
+	}
+
+	result.QueryResult = "where " + result.ConditionResult
 
 	return result, nil
 }

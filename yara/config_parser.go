@@ -10,7 +10,6 @@ type Config struct {
 	Order         int      // Defines the order of expansion when multiple config files are applicable
 	Backends      []string // Lists the Sigma implementations that this config file is compatible with
 	FieldMappings map[string]FieldMapping
-	Logsource     string
 	Placeholders  map[string][]interface{} // Defines values for placeholders that might appear in Yara rules
 }
 
