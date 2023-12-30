@@ -1,7 +1,6 @@
 package evaluator
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"path"
@@ -152,32 +151,44 @@ func removeAll(list []string, value string) []string {
 	return result
 }
 
-func (rule RuleEvaluator) evaluateStrings(ctx context.Context, identifier string, str *pb.String) (string, error) {
+func (rule RuleEvaluator) evaluateMeta(metaValue *strings.Builder, meta *pb.Meta) error {
+	switch val := meta.GetValue().(type) {
+	case *pb.Meta_Text:
+		metaValue.WriteString(fmt.Sprintf(`"%s"`, meta.GetText()))
+	case *pb.Meta_Number:
+		metaValue.WriteString(fmt.Sprintf(`%v`, meta.GetNumber()))
+	case *pb.Meta_Boolean:
+		metaValue.WriteString(fmt.Sprintf(`%v`, meta.GetBoolean()))
+	default:
+		return fmt.Errorf(`unsupported meta value type "%T"`, val)
+	}
+
+	return nil
+}
+
+func (rule RuleEvaluator) evaluateStrings(filter *strings.Builder, identifier string, str *pb.String) error {
 	switch val := str.GetValue().(type) {
 	case *pb.String_Text:
 		// Process TextString value
-		return rule.processTextString(str.GetText(), identifier)
+		return rule.processTextString(filter, str.GetText(), identifier)
 
 	case *pb.String_Hex:
 		// Process Hex value
-		return rule.processHex(str.GetHex(), identifier)
+		return rule.processHex(filter, str.GetHex(), identifier)
 
 	case *pb.String_Regexp:
 		// Process Regexp value
-		return rule.processRegexp(str.GetRegexp(), identifier)
+		return rule.processRegexp(filter, str.GetRegexp(), identifier)
 
 	default:
-		return "", fmt.Errorf(`unsupported string value type "%T"`, val)
+		return fmt.Errorf(`unsupported string value type "%T"`, val)
 	}
 }
-func (rule RuleEvaluator) processTextString(text *pb.TextString, identifier string) (string, error) {
-	// Process TextString value and return the filter
-	var filter string
-
+func (rule RuleEvaluator) processTextString(filter *strings.Builder, text *pb.TextString, identifier string) error {
 	// Extract fieldModifiers from textModifiers
 	fieldModifiers, err := extractFieldModifiers(text.GetModifiers())
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	// Check if "Fullword" is present in the string list
@@ -186,42 +197,38 @@ func (rule RuleEvaluator) processTextString(text *pb.TextString, identifier stri
 	// Get comparator function based on fieldModifiers
 	comparator, err := modifiers.GetComparator(fieldModifiers...)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	if len(rule.fieldmappings[identifier]) == 0 {
-		filter, err = rule.matchValue(text.GetText(), []string{identifier}, comparator)
+		err = rule.matchValue(filter, text.GetText(), []string{identifier}, comparator)
 	} else {
-		filter, err = rule.matchValue(text.GetText(), rule.fieldmappings[identifier], comparator)
+		err = rule.matchValue(filter, text.GetText(), rule.fieldmappings[identifier], comparator)
 	}
 
 	if err != nil {
-		return filter, err
+		return err
 	}
 
-	return filter, nil
+	return nil
 }
 
 // Processes Hex value and returns the YARA filter
-func (rule RuleEvaluator) processHex(hex *pb.HexTokens, identifier string) (string, error) {
-	var filter strings.Builder
-
-	if err := rule.serializeHexString(&filter, hex); err != nil {
-		return "", err
+func (rule RuleEvaluator) processHex(filter *strings.Builder, hex *pb.HexTokens, identifier string) error {
+	if err := rule.serializeHexString(filter, hex); err != nil {
+		return err
 	}
 
-	return filter.String(), nil
+	return nil
 }
 
 // Processes Regexp value and returns the YARA filter
-func (rule RuleEvaluator) processRegexp(regexp *pb.Regexp, identifier string) (string, error) {
-	var filter strings.Builder
-
-	if err := rule.serializeRegexp(&filter, regexp); err != nil {
-		return "", err
+func (rule RuleEvaluator) processRegexp(filter *strings.Builder, regexp *pb.Regexp, identifier string) error {
+	if err := rule.serializeRegexp(filter, regexp); err != nil {
+		return err
 	}
 
-	return filter.String(), nil
+	return nil
 }
 
 // Serializes HexTokens and appends the result to the filter
@@ -445,151 +452,152 @@ func extractFieldModifiers(textModifiers *pb.StringModifiers) ([]string, error) 
 	return fieldModifiers, nil
 }
 
-func (rule *RuleEvaluator) matchValue(value string, fields []string, comparator modifiers.ComparatorFunc) (string, error) {
-	var filters []string
+func (rule *RuleEvaluator) matchValue(filter *strings.Builder, value string, fields []string, comparator modifiers.ComparatorFunc) error {
+	var subFilter *strings.Builder
 	for i, field := range fields {
-		filter, err := comparator(field, value)
+		ftr, err := comparator(field, value)
 		if err != nil {
-			return "", err
+			return err
 		}
-
-		filters = append(filters, filter)
+		subFilter.WriteString(ftr)
 
 		if i < len(fields)-1 {
-			filters = append(filters, " or ")
+			subFilter.WriteString(" or ")
 		}
 	}
 
 	if len(fields) > 1 {
 		// if there are multiple fields, wrap filters in parentheses to keep operator precedence
-		return "(" + strings.Join(filters, "") + ")", nil
+		filter.WriteString("(" + subFilter.String() + ")")
 	} else {
 		// if there's only one field, filters can be added directly
-		return strings.Join(filters, ""), nil
+		filter.WriteString(subFilter.String())
 	}
+
+	return nil
 }
 
 func (rule RuleEvaluator) evaluateExpression(condition *strings.Builder, expression *pb.Expression) error {
 	// Switch-case to check the type
 	switch v := expression.GetExpression().(type) {
 	case *pb.Expression_BoolValue:
-		fmt.Println("BoolValue:", v.BoolValue)
-		if _, err := condition.WriteString(fmt.Sprintf("%v", expression.GetBoolValue())); err != nil {
+		//fmt.Println("BoolValue:", v.BoolValue)
+		if _, err := condition.WriteString(fmt.Sprintf("%v", v.BoolValue)); err != nil {
 			return err
 		}
 	case *pb.Expression_OrExpression:
-		fmt.Println("OrExpression:", v.OrExpression)
-		if err := rule.serializeOrExpression(condition, expression.GetOrExpression()); err != nil {
+		//fmt.Println("OrExpression:", v.OrExpression)
+		if err := rule.serializeOrExpression(condition, v.OrExpression); err != nil {
 			return err
 		}
 	case *pb.Expression_AndExpression:
-		fmt.Println("AndExpression:", v.AndExpression)
-		if err := rule.serializeAndExpression(condition, expression.GetAndExpression()); err != nil {
+		//fmt.Println("AndExpression:", v.AndExpression)
+		if err := rule.serializeAndExpression(condition, v.AndExpression); err != nil {
 			return err
 		}
 	case *pb.Expression_StringIdentifier:
-		fmt.Println("StringIdentifier:", v.StringIdentifier)
-		if _, err := condition.WriteString(expression.GetStringIdentifier()); err != nil {
+		//fmt.Println("StringIdentifier:", v.StringIdentifier)
+		if _, err := condition.WriteString(v.StringIdentifier); err != nil {
 			return err
 		}
 	case *pb.Expression_ForInExpression:
-		fmt.Println("ForInExpression:", v.ForInExpression)
-		if err := rule.serializeForInExpression(condition, expression.GetForInExpression()); err != nil {
+		//fmt.Println("ForInExpression:", v.ForInExpression)
+		if err := rule.serializeForInExpression(condition, v.ForInExpression); err != nil {
 			return err
 		}
 	case *pb.Expression_ForOfExpression:
-		fmt.Println("ForOfExpression:", v.ForOfExpression)
+		//fmt.Println("ForOfExpression:", v.ForOfExpression)
 		var forOfCondition strings.Builder
-		if err := rule.serializeForOfExpression(&forOfCondition, expression.GetForOfExpression()); err != nil {
+		if err := rule.serializeForOfExpression(&forOfCondition, v.ForOfExpression); err != nil {
 			return err
 		}
 		if err := rule.processForOfCondition(&forOfCondition, condition, rule.getStringIdentifiers()); err != nil {
 			return err
 		}
 	case *pb.Expression_BinaryExpression:
-		fmt.Println("BinaryExpression:", v.BinaryExpression)
-		if err := rule.serializeBinaryExpression(condition, expression.GetBinaryExpression()); err != nil {
+		//fmt.Println("BinaryExpression:", v.BinaryExpression)
+		if err := rule.serializeBinaryExpression(condition, v.BinaryExpression); err != nil {
 			return err
 		}
 	case *pb.Expression_UnaryExpression:
-		fmt.Println("UnaryExpression:", v.UnaryExpression)
-		if err := rule.serializeUnaryExpression(condition, expression.GetUnaryExpression()); err != nil {
+		//fmt.Println("UnaryExpression:", v.UnaryExpression)
+		if err := rule.serializeUnaryExpression(condition, v.UnaryExpression); err != nil {
 			return err
 		}
 	case *pb.Expression_NumberValue:
-		fmt.Println("NumberValue:", v.NumberValue)
-		if _, err := condition.WriteString(fmt.Sprintf("%d", expression.GetNumberValue())); err != nil {
+		//fmt.Println("NumberValue:", v.NumberValue)
+		if _, err := condition.WriteString(fmt.Sprintf("%d", v.NumberValue)); err != nil {
 			return err
 		}
 	case *pb.Expression_Text:
-		fmt.Println("Text:", v.Text)
+		//fmt.Println("Text:", v.Text)
 		if _, err := condition.WriteString(`"`); err != nil {
 			return err
 		}
-		if _, err := condition.WriteString(expression.GetText()); err != nil {
+		if _, err := condition.WriteString(v.Text); err != nil {
 			return err
 		}
 		if _, err := condition.WriteString(`"`); err != nil {
 			return err
 		}
 	case *pb.Expression_DoubleValue:
-		fmt.Println("DoubleValue:", v.DoubleValue)
-		if _, err := condition.WriteString(fmt.Sprintf("%f", expression.GetDoubleValue())); err != nil {
+		//fmt.Println("DoubleValue:", v.DoubleValue)
+		if _, err := condition.WriteString(fmt.Sprintf("%f", v.DoubleValue)); err != nil {
 			return err
 		}
 	case *pb.Expression_Range:
-		fmt.Println("Range:", v.Range)
-		if err := rule.serializeRange(condition, expression.GetRange()); err != nil {
+		//fmt.Println("Range:", v.Range)
+		if err := rule.serializeRange(condition, v.Range); err != nil {
 			return err
 		}
 	case *pb.Expression_Keyword:
-		fmt.Println("Keyword:", v.Keyword)
-		if err := rule.serializeKeyword(condition, expression.GetKeyword()); err != nil {
+		//fmt.Println("Keyword:", v.Keyword)
+		if err := rule.serializeKeyword(condition, v.Keyword); err != nil {
 			return err
 		}
 	case *pb.Expression_Identifier:
-		fmt.Println("Identifier:", v.Identifier)
-		if err := rule.serializeIdentifier(condition, expression.GetIdentifier()); err != nil {
+		//fmt.Println("Identifier:", v.Identifier)
+		if err := rule.serializeIdentifier(condition, v.Identifier); err != nil {
 			return err
 		}
 	case *pb.Expression_Regexp:
-		fmt.Println("Regexp:", v.Regexp)
-		if err := rule.serializeRegexp(condition, expression.GetRegexp()); err != nil {
+		//fmt.Println("Regexp:", v.Regexp)
+		if err := rule.serializeRegexp(condition, v.Regexp); err != nil {
 			return err
 		}
 	case *pb.Expression_NotExpression:
-		fmt.Println("NotExpression:", v.NotExpression)
-		if err := rule.serializeNotExpression(condition, expression.GetNotExpression()); err != nil {
+		//fmt.Println("NotExpression:", v.NotExpression)
+		if err := rule.serializeNotExpression(condition, v.NotExpression); err != nil {
 			return err
 		}
 	case *pb.Expression_IntegerFunction:
-		fmt.Println("IntegerFunction:", v.IntegerFunction)
-		if err := rule.serializeIntegerFunction(condition, expression.GetIntegerFunction()); err != nil {
+		//fmt.Println("IntegerFunction:", v.IntegerFunction)
+		if err := rule.serializeIntegerFunction(condition, v.IntegerFunction); err != nil {
 			return err
 		}
 	case *pb.Expression_StringOffset:
-		fmt.Println("StringOffset:", v.StringOffset)
-		if err := rule.serializeStringOffset(condition, expression.GetStringOffset()); err != nil {
+		//fmt.Println("StringOffset:", v.StringOffset)
+		if err := rule.serializeStringOffset(condition, v.StringOffset); err != nil {
 			return err
 		}
 	case *pb.Expression_StringLength:
-		fmt.Println("StringLength:", v.StringLength)
-		if err := rule.serializeStringLength(condition, expression.GetStringLength()); err != nil {
+		//fmt.Println("StringLength:", v.StringLength)
+		if err := rule.serializeStringLength(condition, v.StringLength); err != nil {
 			return err
 		}
 	case *pb.Expression_StringCount:
-		fmt.Println("StringCount:", v.StringCount)
-		if _, err := condition.WriteString(expression.GetStringCount()); err != nil {
+		//fmt.Println("StringCount:", v.StringCount)
+		if _, err := condition.WriteString(v.StringCount); err != nil {
 			return err
 		}
 	case *pb.Expression_PercentageExpression:
-		fmt.Println("PercentageExpression:", v.PercentageExpression)
-		if err := rule.serializePercentageExpression(condition, expression.GetPercentageExpression()); err != nil {
+		//fmt.Println("PercentageExpression:", v.PercentageExpression)
+		if err := rule.serializePercentageExpression(condition, v.PercentageExpression); err != nil {
 			return err
 		}
 	default:
 		// If an unknown type is encountered, perform actions here
-		fmt.Println("Unsupported type")
+		//fmt.Println("Unsupported type")
 	}
 
 	return nil
@@ -1190,7 +1198,7 @@ func (rule RuleEvaluator) processNOfThemConditionWithParenthesis(forOfCondition,
 	}
 
 	numStr := forOfCondition.String()
-	fmt.Println(numStr)
+	//fmt.Println(numStr)
 
 	if ofIndex := strings.Index(numStr, " "); ofIndex > 0 {
 		numStr = numStr[:ofIndex]

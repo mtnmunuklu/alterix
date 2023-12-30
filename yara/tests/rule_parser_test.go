@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -37,8 +36,7 @@ func TestParseRule(t *testing.T) {
 
 	for _, rule := range ruleset.Rules {
 		r := evaluator.ForRule(rule, evaluator.WithConfig(config))
-		ctx := context.Background()
-		result, err := r.Alters(ctx)
+		result, err := r.Alters()
 		if err != nil {
 			fmt.Println("Error converting rule:", err)
 			continue

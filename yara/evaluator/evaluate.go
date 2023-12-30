@@ -1,7 +1,6 @@
 package evaluator
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -15,8 +14,6 @@ type RuleEvaluator struct {
 	*ast.Rule
 	config        []yara.Config       // Additional configuration options to use when evaluating the rule
 	fieldmappings map[string][]string // A compiled mapping from rule fieldnames to possible event fieldnames
-
-	expandPlaceholder func(ctx context.Context, placeholderName string) ([]string, error) // A function to expand placeholders in the Sigma rule template
 }
 
 // ForRule constructs a new RuleEvaluator with the given Sigma rule and evaluation options.
@@ -32,6 +29,7 @@ func ForRule(rule *ast.Rule, options ...Option) *RuleEvaluator {
 // Result represents the evaluation result of a Sigma rule.
 // It contains the search, condition, aggregation, and query results of the rule evaluation.
 type Result struct {
+	MetaResults     map[string]string
 	StringsResults  map[string]string // The map of strings identifiers to their result values
 	ConditionResult string            // The map of condition indices to their result values
 	QueryResult     string            // The map of query indices to their result values
@@ -39,18 +37,32 @@ type Result struct {
 
 // This function returns a Result object containing the evaluation results for the rule's Detection field.
 // It uses the evaluateSearch, evaluateSearchExpression and evaluateAggregationExpression functions to compute the results.
-func (rule RuleEvaluator) Alters(ctx context.Context) (Result, error) {
+func (rule RuleEvaluator) Alters() (Result, error) {
 	result := Result{
+		MetaResults:    make(map[string]string),
 		StringsResults: make(map[string]string),
 	}
 
+	var metaValue strings.Builder
+	for _, meta := range rule.Meta {
+		var err error
+		metaKey := meta.Key
+		err = rule.evaluateMeta(&metaValue, meta.AsProto())
+		if err != nil {
+			return Result{}, fmt.Errorf("error evaluating meta %s: %w", metaKey, err)
+		}
+		result.MetaResults[metaKey] = metaValue.String()
+	}
+
+	var filter strings.Builder
 	for _, str := range rule.Strings {
 		var err error
 		identifier := str.GetIdentifier()
-		result.StringsResults[identifier], err = rule.evaluateStrings(ctx, identifier, str.AsProto())
+		err = rule.evaluateStrings(&filter, identifier, str.AsProto())
 		if err != nil {
 			return Result{}, fmt.Errorf("error evaluating string %s: %w", identifier, err)
 		}
+		result.StringsResults[identifier] = filter.String()
 	}
 
 	var err error
