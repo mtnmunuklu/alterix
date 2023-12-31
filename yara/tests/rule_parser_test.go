@@ -7,18 +7,18 @@ import (
 	"testing"
 
 	"github.com/mtnmunuklu/alterix/yara"
-	"github.com/mtnmunuklu/alterix/yara/evaluator"
+	"github.com/mtnmunuklu/alterix/yara/yevaluator"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestParseRule(t *testing.T) {
-	yara_rule, err := os.Open("../data/rules/2019_0801151528_761546.yar")
+	yara_rule, err := os.Open("../data/rules/sus_nsis_tampered_signature.yar")
 	if err != nil {
 		fmt.Println("Error opening the file: ", err)
 	}
 	defer yara_rule.Close()
 
-	ruleset, err := yara.Parse(yara_rule)
+	ruleset, err := yara.ParseRule(yara_rule)
 	if err != nil {
 		fmt.Println("Error parsing the rules: ", err)
 	}
@@ -35,7 +35,7 @@ func TestParseRule(t *testing.T) {
 	}
 
 	for _, rule := range ruleset.Rules {
-		r := evaluator.ForRule(rule, evaluator.WithConfig(config))
+		r := yevaluator.ForRule(rule, yevaluator.WithConfig(config))
 		result, err := r.Alters()
 		if err != nil {
 			fmt.Println("Error converting rule:", err)

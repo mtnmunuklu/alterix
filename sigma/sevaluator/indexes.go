@@ -1,4 +1,4 @@
-package evaluator
+package sevaluator
 
 // The RelevantToIndex method determines whether the current rule is applicable to the given index.
 // It returns false if a configuration file has not been loaded yet.

@@ -9,11 +9,16 @@ import (
 )
 
 // Parse parses a YARA rule from the provided input source.
-func Parse(input io.Reader) (rs *ast.RuleSet, err error) {
+func ParseRule(input io.Reader) (rs *ast.RuleSet, err error) {
 	return parser.Parse(input)
 }
 
 // ParseString parses a YARA rule from the provided string.
 func ParseString(s string) (*ast.RuleSet, error) {
-	return Parse(bytes.NewBufferString(s))
+	return ParseRule(bytes.NewBufferString(s))
+}
+
+// ParseByte parses a YARA rule from the provided byte slice.
+func ParseByte(input []byte) (rs *ast.RuleSet, err error) {
+	return ParseRule(bytes.NewBuffer(input))
 }

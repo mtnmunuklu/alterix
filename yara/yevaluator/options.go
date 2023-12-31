@@ -1,4 +1,4 @@
-package evaluator
+package yevaluator
 
 import (
 	"github.com/mtnmunuklu/alterix/yara"

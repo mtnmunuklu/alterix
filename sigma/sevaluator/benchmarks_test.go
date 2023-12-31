@@ -1,4 +1,4 @@
-package evaluator_test
+package sevaluator_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/mtnmunuklu/alterix/sigma"
-	"github.com/mtnmunuklu/alterix/sigma/evaluator"
+	"github.com/mtnmunuklu/alterix/sigma/sevaluator"
 )
 
 const testRule = `
@@ -158,8 +158,8 @@ func BenchmarkRuleEvaluator_Alters(b *testing.B) {
 	}
 
 	// Create a RuleEvaluator for the given rule and config
-	r := evaluator.ForRule(rule, evaluator.WithConfig(config))
-
+	//r := sevaluator.ForRule(rule, sevaluator.WithConfig(config))
+	r := sevaluator.ForRule(rule, sevaluator.WithConfig(config))
 	// Create a context
 	ctx := context.Background()
 

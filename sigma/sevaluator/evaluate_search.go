@@ -1,4 +1,4 @@
-package evaluator
+package sevaluator
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/mtnmunuklu/alterix/sigma"
-	"github.com/mtnmunuklu/alterix/sigma/evaluator/modifiers"
+	"github.com/mtnmunuklu/alterix/sigma/sevaluator/modifiers"
 )
 
 // evaluateSearchExpression evaluates a Sigma search expression recursively and returns a string representation of the search condition.

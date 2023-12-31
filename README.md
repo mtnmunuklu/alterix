@@ -7,7 +7,7 @@
 
 # Alterix
 
-Alterix is a tool that converts Sigma rules to the query language of CRYPTTECH's next-generation SIEM product.
+Alterix is a tool that converts Sigma and Yara rules to the query language of CRYPTTECH's next-generation SIEM product.
 
 ## Table of Contents
 
@@ -25,7 +25,8 @@ Alterix is a tool that converts Sigma rules to the query language of CRYPTTECH's
 
 ## Overview
 
-Sigma is an open-source project that provides a rule format and a set of tools for the creation and sharing of detection rules for security operations. CRYPTTECH's SIEM product uses a proprietary query language for searching through logs and identifying security events. Alterix serves as a bridge between the two, allowing security teams to leverage their existing Sigma rule sets with the advanced capabilities of CRYPTTECH's SIEM product.
+Sigma is an open-source project that provides a rule format and a set of tools for the creation and sharing of detection rules for security operations. Yara is a tool aimed at (but not limited to) helping malware researchers to identify and classify malware samples. CRYPTTECH's SIEM product uses a proprietary query language for searching through logs and identifying security events. Alterix serves as a bridge between Sigma, Yara, and CRYPTTECH's SIEM product, allowing security teams to leverage their existing Sigma and Yara rule sets with the advanced capabilities of CRYPTTECH's SIEM product.
+
 
 ## Installation
 To use Alterix, you have two options for installation:
@@ -74,7 +75,7 @@ If you prefer to build Alterix from source, you can refer to the [Build Instruct
 
 ## Usage
 
-To use Alterix, you will need Sigma rules and a configuration file for CRYPTTECH's SIEM product. Sigma rules are written in YAML format and can be found in the Sigma GitHub repository: https://github.com/Neo23x0/sigma/tree/master/rules
+To use Alterix, you will need Sigma rules, Yara rules, and a configuration file for CRYPTTECH's SIEM product. Sigma rules are written in YAML format and can be found in the Sigma GitHub repository: https://github.com/Neo23x0/sigma/tree/master/rules. Yara rules are written in Yara's syntax and can be found in the Yara GitHub repository: https://github.com/VirusTotal/yara
 
 The configuration file for CRYPTTECH's SIEM product should be obtained from your system administrator.
 
@@ -86,11 +87,24 @@ To convert Sigma rules to the query language of CRYPTTECH's SIEM product in your
 2. Convert Sigma rules to the query language of CRYPTTECH's SIEM product by running the following command:
 
     ```shell
-    ./alterix -filepath <path-to-rules> -config <path-to-config> [-json] [-output <output-directory>]
+    ./alterix -sigma -filepath <path-to-sigma-rules> -config <path-to-config> [-json] [-output <output-directory>]
     ```
     or
     ```shell
-    ./alterix -filecontent <content-to-rules> -configcontent <content-to-config> [-json] [-output <output-directory>]
+    ./alterix -sigma -filecontent <content-to-sigma-rules> -configcontent <content-to-config> [-json] [-output <output-directory>]
+    ```
+
+To convert Yara rules to the query language of CRYPTTECH's SIEM product, follow these steps:
+
+1. Prepare Yara rules and a configuration file.
+2. Convert Yara rules to the query language of CRYPTTECH's SIEM product by running the following command:
+
+    ```shell
+    ./alterix -yara -filepath <path-to-yara-rules> -config <path-to-config> [-json] [-output <output-directory>]
+    ```
+    or
+    ```shell
+    ./alterix -yara -filecontent <content-to-yara-rules> -configcontent <content-to-config> [-json] [-output <output-directory>]
     ```
 
 ### Docker Usage
@@ -98,11 +112,20 @@ To convert Sigma rules to the query language of CRYPTTECH's SIEM product in your
 If you have installed Alterix using Docker, you can use the following command to run Alterix inside the Docker container:
 
 ```shell
-docker exec alterix ./alterix -filepath <path-to-rules> -config <path-to-config> [-json] [-output <output-directory>]
+docker exec alterix ./alterix -sigma -filepath <path-to-sigma-rules> -config <path-to-config> [-json] [-output <output-directory>]
 ```
 or
 ```shell
-docker exec alterix ./alterix -filecontent <content-to-rules> -configcontent <content-to-config> [-json] [-output <output-directory>]
+docker exec alterix ./alterix -sigma -filecontent <content-to-sigma-rules> -configcontent <content-to-config> [-json] [-output <output-directory>]
+```
+
+For Yara rules:
+```shell
+docker exec alterix ./alterix -yara -filepath <path-to-yara-rules> -config <path-to-config> [-json] [-output <output-directory>]
+```
+or
+```shell
+docker exec alterix ./alterix -yara -filecontent <content-to-yara-rules> -configcontent <content-to-config> [-json] [-output <output-directory>]
 ```
 
 The `filepath` flag specifies the location of the Sigma rules. This can be a file or directory path.
@@ -117,9 +140,7 @@ The `json` flag indicates that the output should be in JSON format.
 
 The `output` flag specifies the directory where the output files should be written.
 
-If the json flag is provided, Alterix will convert the Sigma rules to JSON format. If the output flag is provided, Alterix will save the output files to the specified directory. If neither flag is provided, the output will be displayed in the console.
-
-
+If the json flag is provided, Alterix will convert the Sigma and Yara rules to JSON format. If the output flag is provided, Alterix will save the output files to the specified directory. If neither flag is provided, the output will be displayed in the console.
 
 ## Contributing
 
@@ -129,7 +150,9 @@ Contributions to Alterix are welcome and encouraged! Please read the [contributi
 
 This project was inspired by the work of Bradley Kemp, whose original repository can be found [here](https://github.com/bradleyjkemp/sigma-go). We would like to thank Bradley for his valuable contribution to the community and for making his code available to us.
 
-We also want to thank the creators of the Sigma project, whose rule format we use in this project. More information about Sigma can be found [here](https://github.com/Neo23x0/sigma).
+We also want to express our gratitude to the creators of the Sigma and Yara projects, as their rule formats form the backbone of this project. More information about Sigma can be found [here](https://github.com/Neo23x0/sigma), and about Yara [here](https://github.com/VirusTotal/yara).
+
+Additionally, we appreciate the efforts of the [VirusTotal Yara parser project](https://github.com/VirusTotal/gyp) for their work on Yara parsing, which has been instrumental in the development of this tool.
 
 ## Sponsors
 

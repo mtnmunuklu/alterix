@@ -1,4 +1,4 @@
-package evaluator
+package sevaluator
 
 import (
 	"context"
@@ -97,14 +97,14 @@ func (rule RuleEvaluator) Alters(ctx context.Context) (Result, error) {
 			aggregationResult := strings.Split(result.AggregationResults[i], "|")
 			for j, aggregation := range aggregationResult {
 				if j == 0 {
-					result.QueryResults[i] = aggregation + " where " + strings.Join(conditionList, "")
+					result.QueryResults[i] = aggregation + strings.Join(conditionList, "")
 				} else {
 					result.QueryResults[i] += " " + aggregation
 				}
 			}
 		} else {
 			// If the condition doesn't have an aggregation, add the conditionList to the final query string
-			result.QueryResults[i] = "where " + strings.Join(conditionList, "")
+			result.QueryResults[i] = "eql select * from _source_ where _condition_ and " + strings.Join(conditionList, "")
 		}
 
 		// Add the sourcetype condition to the final query string, if applicable

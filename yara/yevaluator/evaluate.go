@@ -1,4 +1,4 @@
-package evaluator
+package yevaluator
 
 import (
 	"fmt"
@@ -54,8 +54,8 @@ func (rule RuleEvaluator) Alters() (Result, error) {
 		result.MetaResults[metaKey] = metaValue.String()
 	}
 
-	var filter strings.Builder
 	for _, str := range rule.Strings {
+		var filter strings.Builder
 		var err error
 		identifier := str.GetIdentifier()
 		err = rule.evaluateStrings(&filter, identifier, str.AsProto())
@@ -79,7 +79,7 @@ func (rule RuleEvaluator) Alters() (Result, error) {
 		}
 	}
 
-	result.QueryResult = "where " + result.ConditionResult
+	result.QueryResult = "sourcetype='*' eql select * from _source_ where _condition_ and " + result.ConditionResult
 
 	return result, nil
 }

@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/mtnmunuklu/alterix/sigma"
-	"github.com/mtnmunuklu/alterix/sigma/evaluator"
+	"github.com/mtnmunuklu/alterix/sigma/sevaluator"
+	"github.com/mtnmunuklu/alterix/yara"
+	"github.com/mtnmunuklu/alterix/yara/yevaluator"
 )
 
 var (
@@ -25,6 +27,8 @@ var (
 	outputPath    string
 	version       bool
 	caseSensitive bool
+	useSigma      bool
+	useYara       bool
 )
 
 // Set up the command-line flags
@@ -38,6 +42,8 @@ func init() {
 	flag.StringVar(&outputPath, "output", "", "Output directory for writing files")
 	flag.BoolVar(&version, "version", false, "Show version information")
 	flag.BoolVar(&caseSensitive, "cs", false, "Case sensitive mode")
+	flag.BoolVar(&useSigma, "sigma", false, "Use Sigma rules")
+	flag.BoolVar(&useYara, "yara", false, "Use Yara rules")
 	flag.Parse()
 
 	// Check if filepath and configpath are provided as command-line arguments
@@ -56,7 +62,7 @@ func init() {
 	}
 }
 
-func formatJSONResult(rule sigma.Rule, result map[int]string) []byte {
+func formatSigmaJSONResult(rule sigma.Rule, queries map[int]string) []byte {
 	// Define a struct type named JSONResult to represent the JSON output fields.
 	type JSONResult struct {
 		Name           string   `json:"Name"`
@@ -70,12 +76,12 @@ func formatJSONResult(rule sigma.Rule, result map[int]string) []byte {
 
 	// Create a strings.Builder variable named query.
 	var query strings.Builder
-	for i, value := range result {
+	for i, qry := range queries {
 		// Add a newline character if the index is greater than zero.
 		if i > 0 {
 			query.WriteString("\n")
 		}
-		query.WriteString(value)
+		query.WriteString(qry)
 	}
 
 	// Create an instance of the JSONResult struct.
@@ -87,6 +93,51 @@ func formatJSONResult(rule sigma.Rule, result map[int]string) []byte {
 		LastUpdateDate: time.Now().UTC().Format(time.RFC3339),
 		Tags:           rule.Tags,
 		Level:          rule.Level,
+	}
+
+	// Marshal the JSONResult struct into JSON data.
+	jsonData, err := json.MarshalIndent(jsonResult, "", "  ")
+	if err != nil {
+		fmt.Println("Error encoding JSON:", err)
+		return nil
+	}
+
+	return jsonData
+}
+
+func formatYaraJSONResult(title, query string, tags []string, metas map[string]string) []byte {
+	// Define a struct type named JSONResult to represent the JSON output fields.
+	type JSONResult struct {
+		Name           string   `json:"Name"`
+		Description    string   `json:"Description"`
+		Query          string   `json:"Query"`
+		InsertDate     string   `json:"InsertDate"`
+		LastUpdateDate string   `json:"LastUpdateDate"`
+		Tags           []string `json:"Tags"`
+		Level          string   `json:"Level"`
+	}
+
+	// Convert the keys in metas map to lowercase
+	lowercaseMetas := make(map[string]string)
+	for key, value := range metas {
+		lowercaseMetas[strings.ToLower(key)] = value
+	}
+
+	// Check if the "description" field is present in the lowercaseMetas map
+	var description string
+	if val, ok := lowercaseMetas["description"]; ok {
+		description = val
+	}
+
+	// Create an instance of the JSONResult struct.
+	jsonResult := JSONResult{
+		Name:           title,
+		Description:    description,
+		Query:          query,
+		InsertDate:     time.Now().UTC().Format(time.RFC3339),
+		LastUpdateDate: time.Now().UTC().Format(time.RFC3339),
+		Tags:           tags,
+		Level:          "",
 	}
 
 	// Marshal the JSONResult struct into JSON data.
@@ -119,6 +170,13 @@ func main() {
 	if version {
 		fmt.Println("Alterix version 1.2.0")
 		return
+	}
+
+	// Ensure either Sigma or Yara flag is provided
+	if !useSigma && !useYara {
+		fmt.Println("Please provide either --sigma or --yara flag to specify the type of rules.")
+		printUsage()
+		os.Exit(1)
 	}
 
 	// Read the contents of the file(s) specified by the filepath flag or filecontent flag
@@ -206,65 +264,118 @@ func main() {
 
 	// Loop over each file and parse its contents as a Sigma rule
 	for _, fileContent := range fileContents {
-		rule, err := sigma.ParseRule(fileContent)
-		if err != nil {
-			fmt.Println("Error parsing rule:", err)
-			continue
-		}
-
-		// Parse the configuration file as a Sigma config
-		config, err := sigma.ParseConfig(configContents)
-		if err != nil {
-			fmt.Println("Error parsing config:", err)
-			continue
-		}
-
-		var r *evaluator.RuleEvaluator
-
-		if caseSensitive {
-			// Evaluate the Sigma rule against the config using case sensitive mode
-			r = evaluator.ForRule(rule, evaluator.WithConfig(config), evaluator.CaseSensitive)
-		} else {
-			// Evaluate the Sigma rule against the config
-			r = evaluator.ForRule(rule, evaluator.WithConfig(config))
-		}
-
-		ctx := context.Background()
-		result, err := r.Alters(ctx)
-		if err != nil {
-			fmt.Println("Error converting rule:", err)
-			continue
-		}
-
-		var output string
-
-		// Print the results of the query
-		if outputJSON {
-			jsonResult := formatJSONResult(rule, result.QueryResults)
-			output = string(jsonResult)
-		} else {
-			var builder strings.Builder
-			for _, queryResult := range result.QueryResults {
-				builder.WriteString(queryResult + "\n")
-			}
-			output = builder.String()
-		}
-
-		// Check if outputPath is provided
-		if outputPath != "" {
-			// Create the output file path using the Name field from the rule
-			outputFilePath := filepath.Join(outputPath, fmt.Sprintf("%s.json", rule.Title))
-
-			// Write the output string to the output file
-			err := os.WriteFile(outputFilePath, []byte(output), 0644)
+		if useSigma {
+			sigmaRule, err := sigma.ParseRule(fileContent)
 			if err != nil {
-				fmt.Println("Error writing output to file:", err)
+				fmt.Println("Error parsing rule:", err)
 				continue
 			}
 
-			fmt.Printf("Output for rule '%s' written to file: %s\n", rule.Title, outputFilePath)
-		} else {
-			fmt.Printf("%s", output)
+			// Parse the configuration file as a Sigma config
+			config, err := sigma.ParseConfig(configContents)
+			if err != nil {
+				fmt.Println("Error parsing config:", err)
+				continue
+			}
+
+			var sr *sevaluator.RuleEvaluator
+
+			if caseSensitive {
+				// Evaluate the Sigma rule against the config using case sensitive mode
+				sr = sevaluator.ForRule(sigmaRule, sevaluator.WithConfig(config), sevaluator.CaseSensitive)
+			} else {
+				// Evaluate the Sigma rule against the config
+				sr = sevaluator.ForRule(sigmaRule, sevaluator.WithConfig(config))
+			}
+
+			ctx := context.Background()
+			result, err := sr.Alters(ctx)
+			if err != nil {
+				fmt.Println("Error converting rule:", err)
+				continue
+			}
+
+			var output string
+
+			// Print the results of the query
+			if outputJSON {
+				jsonResult := formatSigmaJSONResult(sigmaRule, result.QueryResults)
+				output = string(jsonResult)
+			} else {
+				var builder strings.Builder
+				for _, queryResult := range result.QueryResults {
+					builder.WriteString(queryResult + "\n")
+				}
+				output = builder.String()
+			}
+
+			// Check if outputPath is provided
+			if outputPath != "" {
+				// Create the output file path using the Name field from the rule
+				outputFilePath := filepath.Join(outputPath, fmt.Sprintf("%s.json", sigmaRule.Title))
+
+				// Write the output string to the output file
+				err := os.WriteFile(outputFilePath, []byte(output), 0644)
+				if err != nil {
+					fmt.Println("Error writing output to file:", err)
+					continue
+				}
+
+				fmt.Printf("Output for rule '%s' written to file: %s\n", sigmaRule.Title, outputFilePath)
+			} else {
+				fmt.Printf("%s", output)
+			}
+		} else if useYara {
+			yaraRuleSet, err := yara.ParseByte(fileContent)
+			if err != nil {
+				fmt.Println("Error parsing rule:", err)
+				continue
+			}
+
+			// Parse the configuration file as a Yara config
+			config, err := yara.ParseConfig(configContents)
+			if err != nil {
+				fmt.Println("Error parsing config:", err)
+				continue
+			}
+
+			for _, yaraRule := range yaraRuleSet.Rules {
+				// Evaluate the Yara rule against the config
+				yr := yevaluator.ForRule(yaraRule, yevaluator.WithConfig(config))
+				result, err := yr.Alters()
+				if err != nil {
+					fmt.Println("Error converting rule:", err)
+					continue
+				}
+
+				var output string
+
+				// Print the results of the query
+				if outputJSON {
+					jsonResult := formatYaraJSONResult(yaraRule.Identifier, result.QueryResult, yaraRule.Tags, result.MetaResults)
+					output = string(jsonResult)
+				} else {
+					output = result.QueryResult
+				}
+
+				// Check if outputPath is provided
+				if outputPath != "" {
+					// Create the output file path using the Name field from the rule
+					outputFilePath := filepath.Join(outputPath, fmt.Sprintf("%s.json", yaraRule.Identifier))
+
+					// Write the output string to the output file
+					err := os.WriteFile(outputFilePath, []byte(output), 0644)
+					if err != nil {
+						fmt.Println("Error writing output to file:", err)
+						continue
+					}
+
+					fmt.Printf("Output for rule '%s' written to file: %s\n", yaraRule.Identifier, outputFilePath)
+				} else {
+					fmt.Printf("%s", output)
+				}
+				fmt.Println(result)
+			}
 		}
 	}
 }

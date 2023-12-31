@@ -1,4 +1,4 @@
-package evaluator
+package sevaluator
 
 // calculateFieldMappings compiles a mapping from the rule fieldnames to possible event fieldnames
 func (rule *RuleEvaluator) calculateFieldMappings() {
