@@ -46,14 +46,6 @@ func init() {
 	flag.BoolVar(&useYara, "yara", false, "Use Yara rules")
 	flag.Parse()
 
-	// Check if filepath and configpath are provided as command-line arguments
-	if flag.NArg() > 0 {
-		filePath = flag.Arg(0)
-	}
-	if flag.NArg() > 1 {
-		configPath = flag.Arg(1)
-	}
-
 	// If the version flag is provided, print version information and exit
 	if version {
 		fmt.Println("Alterix version 1.4.0")
@@ -64,6 +56,14 @@ func init() {
 	if showHelp {
 		printUsage()
 		os.Exit(1)
+	}
+
+	// Check if filepath and configpath are provided as command-line arguments
+	if flag.NArg() > 0 {
+		filePath = flag.Arg(0)
+	}
+	if flag.NArg() > 1 {
+		configPath = flag.Arg(1)
 	}
 
 	// Check if both filecontent and configcontent are provided
