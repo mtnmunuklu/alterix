@@ -373,7 +373,6 @@ func main() {
 				} else {
 					fmt.Printf("%s", output)
 				}
-				fmt.Println(result)
 			}
 		}
 	}
