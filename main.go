@@ -54,6 +54,12 @@ func init() {
 		configPath = flag.Arg(1)
 	}
 
+	// If the version flag is provided, print version information and exit
+	if version {
+		fmt.Println("Alterix version 1.4.0")
+		os.Exit(1)
+	}
+
 	// Check if both filecontent and configcontent are provided
 	if (filePath == "" && fileContent == "") || (configPath == "" && configContent == "") {
 		fmt.Println("Please provide either file paths or file contents, and either config path or config content.")
@@ -163,12 +169,6 @@ func main() {
 	// If the help flag is provided, print usage information and exit
 	if showHelp {
 		printUsage()
-		return
-	}
-
-	// If the version flag is provided, print version information and exit
-	if version {
-		fmt.Println("Alterix version 1.4.0")
 		return
 	}
 
