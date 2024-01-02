@@ -60,6 +60,12 @@ func init() {
 		os.Exit(1)
 	}
 
+	// If the help flag is provided, print usage information and exit
+	if showHelp {
+		printUsage()
+		os.Exit(1)
+	}
+
 	// Check if both filecontent and configcontent are provided
 	if (filePath == "" && fileContent == "") || (configPath == "" && configContent == "") {
 		fmt.Println("Please provide either file paths or file contents, and either config path or config content.")
@@ -165,13 +171,6 @@ func printUsage() {
 }
 
 func main() {
-
-	// If the help flag is provided, print usage information and exit
-	if showHelp {
-		printUsage()
-		return
-	}
-
 	// Ensure either Sigma or Yara flag is provided
 	if !useSigma && !useYara {
 		fmt.Println("Please provide either --sigma or --yara flag to specify the type of rules.")
