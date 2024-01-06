@@ -18,6 +18,7 @@ Alterix is a tool that converts Sigma and Yara rules to the query language of CR
 - [Usage](#usage)
   - [Normal Usage](#normal-usage)
   - [Docker Usage](#docker-usage)
+- [Demo](#demo)
 - [Contributing](#contributing)
 - [Acknowledgement](#acknowledgement)
 - [Sponsors](#sponsors)
@@ -141,6 +142,12 @@ The `json` flag indicates that the output should be in JSON format.
 The `output` flag specifies the directory where the output files should be written.
 
 If the json flag is provided, Alterix will convert the Sigma and Yara rules to JSON format. If the output flag is provided, Alterix will save the output files to the specified directory. If neither flag is provided, the output will be displayed in the console.
+
+## Demo
+
+Check out a quick demo of Alterix in action:
+
+![Alterix Demo](images/alterix.gif)
 
 ## Contributing
 
