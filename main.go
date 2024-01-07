@@ -163,11 +163,11 @@ func formatYaraJSONResult(title, query string, tags []string, metas map[string]s
 }
 
 func printUsage() {
-	fmt.Println("Usage: alterix -filepath <path> -config <path> [flags]")
+	fmt.Println("Usage: alterix -sigma/-yara -filepath <path> -config <path> [flags]")
 	fmt.Println("Flags:")
 	flag.PrintDefaults()
 	fmt.Println("Example:")
-	fmt.Println("  alterix -filepath /path/to/file -config /path/to/config")
+	fmt.Println("  alterix -sigma/-yara -filepath /path/to/file -config /path/to/config")
 }
 
 func main() {
