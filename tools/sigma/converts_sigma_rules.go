@@ -170,7 +170,7 @@ func SavePreviousFiles() {
 func RunAlterix(inputData map[string][]string) {
 	for _, rulePath := range inputData["changed_rules"] {
 		if useDocker {
-			cmd := exec.Command("docker", "exec", "alterix", "./alterix", "-filepath", rulePath, "-config", alterixConfigPath, "-json", "-output", alterixOutputDir)
+			cmd := exec.Command("docker", "exec", "alterix", "-sigma", "./alterix", "-filepath", rulePath, "-config", alterixConfigPath, "-json", "-output", alterixOutputDir, "-cs")
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 			err := cmd.Run()
@@ -178,7 +178,7 @@ func RunAlterix(inputData map[string][]string) {
 				fmt.Println("Error running ALTERIX:", err)
 			}
 		} else {
-			cmd := exec.Command(alterixPath, "-filepath", rulePath, "-config", alterixConfigPath, "-json", "-output", alterixOutputDir)
+			cmd := exec.Command(alterixPath, "-sigma", "-filepath", rulePath, "-config", alterixConfigPath, "-json", "-output", alterixOutputDir, "-cs")
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 			err := cmd.Run()
@@ -190,7 +190,7 @@ func RunAlterix(inputData map[string][]string) {
 
 	for _, rulePath := range inputData["new_rules"] {
 		if useDocker {
-			cmd := exec.Command("docker", "exec", "alterix", "./alterix", "-filepath", rulePath, "-config", alterixConfigPath, "-json", "-output", alterixOutputDir)
+			cmd := exec.Command("docker", "exec", "alterix", "./alterix", "-sigma", "-filepath", rulePath, "-config", alterixConfigPath, "-json", "-output", alterixOutputDir, "-cs")
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 			err := cmd.Run()
@@ -198,7 +198,7 @@ func RunAlterix(inputData map[string][]string) {
 				fmt.Println("Error running ALTERIX:", err)
 			}
 		} else {
-			cmd := exec.Command(alterixPath, "-filepath", rulePath, "-config", alterixConfigPath, "-json", "-output", alterixOutputDir)
+			cmd := exec.Command(alterixPath, "-sigma", "-filepath", rulePath, "-config", alterixConfigPath, "-json", "-output", alterixOutputDir, "-cs")
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 			err := cmd.Run()
