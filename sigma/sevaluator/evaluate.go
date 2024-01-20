@@ -111,7 +111,7 @@ func (rule RuleEvaluator) Alters(ctx context.Context) (Result, error) {
 		if rule.Logsource.Product != "" && rule.Logsource.Service != "" {
 			result.QueryResults[i] = fmt.Sprintf("sourcetype='%v' %v", rule.Logsource.Product+"-"+rule.Logsource.Service, result.QueryResults[i])
 		} else if rule.Logsource.Product != "" && rule.Logsource.Service == "" {
-			result.QueryResults[i] = fmt.Sprintf("sourcetype='%v' %v", rule.Logsource.Product+"-*", result.QueryResults[i])
+			result.QueryResults[i] = fmt.Sprintf("sourcetype like '%v' %v", rule.Logsource.Product+"-%", result.QueryResults[i])
 		}
 	}
 
