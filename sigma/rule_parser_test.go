@@ -1,7 +1,6 @@
 package sigma
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,7 +19,7 @@ func TestParseRule(t *testing.T) {
 		}
 
 		t.Run(strings.TrimSuffix(filepath.Base(path), ".rule.yml"), func(t *testing.T) {
-			contents, err := ioutil.ReadFile(path)
+			contents, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatalf("failed reading test input: %v", err)
 			}
@@ -46,7 +45,7 @@ func TestMarshalRule(t *testing.T) {
 		}
 
 		t.Run(strings.TrimSuffix(filepath.Base(path), ".rule.yml"), func(t *testing.T) {
-			contents, err := ioutil.ReadFile(path)
+			contents, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatalf("failed reading test input: %v", err)
 			}

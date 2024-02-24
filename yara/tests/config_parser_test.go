@@ -2,7 +2,6 @@ package tests
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,7 +25,7 @@ func TestParseConfig(t *testing.T) {
 
 		t.Run(strings.TrimSuffix(filepath.Base(path), ".config.yml"), func(t *testing.T) {
 			// Read the contents of the config file.
-			contents, err := ioutil.ReadFile(path)
+			contents, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatalf("failed reading test input: %v", err)
 			}
