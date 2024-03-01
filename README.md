@@ -65,7 +65,7 @@ Once Docker is installed, run the provided commands to create a Docker image for
 3. **Build Docker Image and Start Container**: Use the setup script to build the Docker image named alterix-image:
 
    ```shell
-   go run setup_docker_alterix.go /path/to/rules /path/to/config /path/to/output
+   go run setup_docker_alterix.go -rules <rulesDirectory> -config <configFile> -output <outputDirectory>
    ```
    
    This script will handle the building of the Docker image and starting the container for you.
