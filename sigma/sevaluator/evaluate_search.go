@@ -194,39 +194,45 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 	panic(fmt.Sprintf("unhandled node type %T", search))
 }
 
-// The evaluateSearch function takes a sigma.Search object and evaluates it, returning a slice of filter strings or an error.
 func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Search) ([]string, error) {
 	var filters []string
 
 	if len(search.Keywords) > 0 {
-		return filters, fmt.Errorf("keywords unsupported")
-	}
+		comparator, err := modifiers.GetComparator("contains")
+		if rule.caseSensitive {
+			comparator, err = modifiers.GetComparatorCaseSensitive("contains")
+		}
+		if err != nil {
+			return filters, err
+		}
 
-	if len(search.EventMatchers) == 0 {
-		// degenerate case (but common for logsource conditionResults)
+		filter, err := rule.matcherMatchesValues(search.Keywords, []string{"log"}, comparator, false)
+		if err != nil {
+			return filters, err
+		}
+
+		filters = append(filters, filter)
 		return filters, nil
 	}
 
-	// A Search is a series of EventMatchers (usually one)
-	// Each EventMatchers is a series of "does this field match this value" conditionResults
-	// all fields need to match for an EventMatcher to match, but only one EventMatcher needs to match for the Search to evaluate to true
+	if len(search.EventMatchers) == 0 {
+		return filters, nil
+	}
+
 	for _, eventMatcher := range search.EventMatchers {
 		for _, fieldMatcher := range eventMatcher {
-			// A field matcher can specify multiple values to match against
-			// either the field should match all of these values or it should match any of them
-			allValuesMustMatch := false
+			allValuesMustMatch := len(fieldMatcher.Modifiers) > 0 && fieldMatcher.Modifiers[len(fieldMatcher.Modifiers)-1] == "all"
 			fieldModifiers := fieldMatcher.Modifiers
-			if len(fieldMatcher.Modifiers) > 0 && fieldModifiers[len(fieldModifiers)-1] == "all" {
-				allValuesMustMatch = true
+			if allValuesMustMatch {
 				fieldModifiers = fieldModifiers[:len(fieldModifiers)-1]
 			}
 
-			var comparator modifiers.ComparatorFunc
-			var err error
+			comparator, err := modifiers.GetComparator(fieldModifiers...)
 			if rule.caseSensitive {
 				comparator, err = modifiers.GetComparatorCaseSensitive(fieldModifiers...)
-			} else {
-				comparator, err = modifiers.GetComparator(fieldModifiers...)
+			}
+			if err != nil {
+				return filters, err
 			}
 
 			matcherValues, err := rule.getMatcherValues(ctx, fieldMatcher)
@@ -234,15 +240,12 @@ func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Searc
 				return filters, err
 			}
 
-			var filter string
-			if len(rule.fieldmappings[fieldMatcher.Field]) == 0 {
-				// If there are no field mappings defined, only the specified field is checked
-				filter, err = rule.matcherMatchesValues(matcherValues, []string{fieldMatcher.Field}, comparator, allValuesMustMatch)
-			} else {
-				// If there are field mappings defined, they are used to check multiple fields
-				filter, err = rule.matcherMatchesValues(matcherValues, rule.fieldmappings[fieldMatcher.Field], comparator, allValuesMustMatch)
+			targetFields := []string{fieldMatcher.Field}
+			if len(rule.fieldmappings[fieldMatcher.Field]) > 0 {
+				targetFields = rule.fieldmappings[fieldMatcher.Field]
 			}
 
+			filter, err := rule.matcherMatchesValues(matcherValues, targetFields, comparator, allValuesMustMatch)
 			if err != nil {
 				return filters, err
 			}

@@ -99,7 +99,7 @@ func formatSigmaJSONResult(rule sigma.Rule, queries map[int]string) []byte {
 	// Create an instance of the JSONResult struct.
 	jsonResult := JSONResult{
 		Name:           rule.Title,
-		Description:    rule.Description,
+		Description:    rule.Description + "\n\nAuthor: " + rule.Author + "\nSigma Repository: [GitHub](https://github.com/SigmaHQ/sigma)",
 		Query:          query.String(),
 		InsertDate:     time.Now().UTC().Format(time.RFC3339),
 		LastUpdateDate: time.Now().UTC().Format(time.RFC3339),
@@ -135,16 +135,19 @@ func formatYaraJSONResult(title, query string, tags []string, metas map[string]s
 		lowercaseMetas[strings.ToLower(key)] = value
 	}
 
-	// Check if the "description" field is present in the lowercaseMetas map
-	var description string
+	// Check if the "description" and "author" fields are present in the lowercaseMetas map
+	var description, author string
 	if val, ok := lowercaseMetas["description"]; ok {
 		description = val
+	}
+	if val, ok := lowercaseMetas["author"]; ok {
+		author = val
 	}
 
 	// Create an instance of the JSONResult struct.
 	jsonResult := JSONResult{
 		Name:           title,
-		Description:    description,
+		Description:    description + "\n\nAuthor: " + author,
 		Query:          query,
 		InsertDate:     time.Now().UTC().Format(time.RFC3339),
 		LastUpdateDate: time.Now().UTC().Format(time.RFC3339),
