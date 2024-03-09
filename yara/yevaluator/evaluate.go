@@ -43,8 +43,8 @@ func (rule RuleEvaluator) Alters() (Result, error) {
 		StringsResults: make(map[string]string),
 	}
 
-	var metaValue strings.Builder
 	for _, meta := range rule.Meta {
+		var metaValue strings.Builder
 		var err error
 		metaKey := meta.Key
 		err = rule.evaluateMeta(&metaValue, meta.AsProto())
