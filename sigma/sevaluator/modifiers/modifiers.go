@@ -9,15 +9,18 @@ import (
 )
 
 func GetComparator(modifiers ...string) (ComparatorFunc, error) {
-	return getComparator(Comparators, modifiers...)
+	return getComparator(Comparators, false, modifiers...)
 }
 
 func GetComparatorCaseSensitive(modifiers ...string) (ComparatorFunc, error) {
-	return getComparator(ComparatorsCaseSensitive, modifiers...)
+	return getComparator(ComparatorsCaseSensitive, true, modifiers...)
 }
 
-func getComparator(comparators map[string]Comparator, modifiers ...string) (ComparatorFunc, error) {
+func getComparator(comparators map[string]Comparator, caseSensitive bool, modifiers ...string) (ComparatorFunc, error) {
 	if len(modifiers) == 0 {
+		if caseSensitive {
+			return baseComparatorCaseSensitive{}.Alters, nil
+		}
 		return baseComparator{}.Alters, nil
 	}
 
@@ -44,7 +47,11 @@ func getComparator(comparators map[string]Comparator, modifiers ...string) (Comp
 		}
 	}
 	if comparator == nil {
-		comparator = baseComparator{}
+		if caseSensitive {
+			comparator = baseComparatorCaseSensitive{}
+		} else {
+			comparator = baseComparator{}
+		}
 	}
 
 	return func(field, value any) (string, error) {
@@ -129,6 +136,17 @@ type startswith struct{}
 
 func (startswith) Alters(field, value any) (string, error) {
 	return fmt.Sprintf("%v like '%v%%'", strings.ToLower(coerceString(field)), strings.ToLower(coerceString(value))), nil
+}
+
+type baseComparatorCaseSensitive struct{}
+
+func (baseComparatorCaseSensitive) Alters(field, value any) (string, error) {
+	switch {
+	case field == nil && value == "null":
+		return "", nil
+	default:
+		return fmt.Sprintf("%v = '%v'", coerceString(field), coerceString(value)), nil
+	}
 }
 
 type containsCS struct{}
