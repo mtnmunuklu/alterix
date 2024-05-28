@@ -145,7 +145,7 @@ func (baseComparatorCaseSensitive) Alters(field, value any) (string, error) {
 	case field == nil && value == "null":
 		return "", nil
 	default:
-		return fmt.Sprintf("%v = '%v'", coerceString(field), coerceString(value)), nil
+		return fmt.Sprintf("%v = '%v'", strings.ToLower(coerceString(field)), coerceString(value)), nil
 	}
 }
 
