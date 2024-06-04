@@ -79,7 +79,7 @@ func (rule RuleEvaluator) Alters(ctx context.Context) (Result, error) {
 		for _, condition := range conditionResult {
 			// If the condition matches any search identifier, replace it with the corresponding search results
 			if value, ok := result.SearchResults[condition]; ok {
-				if len(conditionResult) > 1 {
+				if len(conditionResult) > 1 && len(value) > 1 {
 					conditionList = append(conditionList, "("+strings.Join(value, " and ")+")")
 				} else if len(value) > 1 {
 					conditionList = append(conditionList, strings.Join(value, " and "))
@@ -102,6 +102,9 @@ func (rule RuleEvaluator) Alters(ctx context.Context) (Result, error) {
 					result.QueryResults[i] += " " + aggregation
 				}
 			}
+		} else if len(conditionList) > 1 {
+			// If the condition doesn't have an aggregation, add the conditionList to the final query string
+			result.QueryResults[i] = "eql select * from _source_ where _condition_ and " + "(" + strings.Join(conditionList, "") + ")"
 		} else {
 			// If the condition doesn't have an aggregation, add the conditionList to the final query string
 			result.QueryResults[i] = "eql select * from _source_ where _condition_ and " + strings.Join(conditionList, "")
