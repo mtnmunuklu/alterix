@@ -58,7 +58,7 @@ jobs:
       - name: Find Config Files (Windows)
         if: ${{ matrix.platform == 'windows-latest' }}
         run: |
-          Get-ChildItem -Recurse -Filter sysmon.config.yml, yara.config.yml | ForEach-Object { $_.FullName } > config_files.txt
+          Get-ChildItem -Recurse -Filter *.yml | Where-Object { $_.Name -in "sysmon.config.yml", "yara.config.yml" } | ForEach-Object { $_.FullName } | Out-File config_files.txt
 
       - name: Create Zip Archive (Windows)
         if: ${{ matrix.platform == 'windows-latest' }}
