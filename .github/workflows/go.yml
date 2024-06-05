@@ -50,9 +50,15 @@ jobs:
       - name: Test
         run: echo "No tests to run."
 
-      - name: Find Config Files
+      - name: Find Config Files (Linux, macOS)
+        if: ${{ matrix.platform != 'windows-latest' }}
         run: |
           find . -name "sysmon.config.yml" -o -name "yara.config.yml" > config_files.txt
+
+      - name: Find Config Files (Windows)
+        if: ${{ matrix.platform == 'windows-latest' }}
+        run: |
+          Get-ChildItem -Recurse -Filter sysmon.config.yml, yara.config.yml | ForEach-Object { $_.FullName } > config_files.txt
 
       - name: Create Zip Archive (Windows)
         if: ${{ matrix.platform == 'windows-latest' }}
