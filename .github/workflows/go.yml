@@ -50,18 +50,25 @@ jobs:
       - name: Test
         run: echo "No tests to run."
 
+      - name: Find Config Files
+        run: |
+          find . -name "sysmon.config.yml" -o -name "yara.config.yml" > config_files.txt
+
       - name: Create Zip Archive (Windows)
         if: ${{ matrix.platform == 'windows-latest' }}
         run: |
           Rename-Item -Path ./alterix -NewName "alterix.exe"
           Rename-Item -Path ./add_query -NewName "add_query.exe"
           Rename-Item -Path ./add_rule -NewName "add_rule.exe"
-          powershell Compress-Archive -Path ./alterix.exe, ./add_query.exe, ./add_rule.exe -DestinationPath alterix-${{ matrix.platform }}.zip
+          $configFiles = Get-Content config_files.txt | ForEach-Object { $_.Trim() }
+          Compress-Archive -Path @("./alterix.exe", "./add_query.exe", "./add_rule.exe") -DestinationPath alterix-${{ matrix.platform }}.zip
+          Compress-Archive -Path $configFiles -Update -DestinationPath alterix-${{ matrix.platform }}.zip
 
       - name: Create Zip Archive (Linux, macOS)
         if: ${{ matrix.platform != 'windows-latest' }}
         run: |
-          zip -r alterix-${{ matrix.platform }}.zip alterix add_query add_rule
+          config_files=$(cat config_files.txt | xargs)
+          zip -r alterix-${{ matrix.platform }}.zip alterix add_query add_rule $config_files
 
       - name: Upload Assets
         if: ${{ github.event_name == 'release' }}
