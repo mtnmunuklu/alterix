@@ -48,7 +48,7 @@ func init() {
 
 	// If the version flag is provided, print version information and exit
 	if version {
-		fmt.Println("Alterix version 1.4.3")
+		fmt.Println("Alterix version 1.4.4")
 		os.Exit(1)
 	}
 
