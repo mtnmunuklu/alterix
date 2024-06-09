@@ -21,7 +21,6 @@ Alterix is a tool that converts Sigma and Yara rules to the query language of CR
 - [Demo](#demo)
 - [Contributing](#contributing)
 - [Acknowledgement](#acknowledgement)
-- [Sponsors](#sponsors)
 - [License](#license)
 
 ## Overview
@@ -160,26 +159,6 @@ This project was inspired by the work of Bradley Kemp, whose original repository
 We also want to express our gratitude to the creators of the Sigma and Yara projects, as their rule formats form the backbone of this project. More information about Sigma can be found [here](https://github.com/Neo23x0/sigma), and about Yara [here](https://github.com/VirusTotal/yara).
 
 Additionally, we appreciate the efforts of the [VirusTotal Yara parser project](https://github.com/VirusTotal/gyp) for their work on Yara parsing, which has been instrumental in the development of this tool.
-
-## Sponsors
-
-We would like to express our gratitude to the following sponsors for their generous support:
-
-<div align="center">
-  <a href="https://github.com/th3gundy">
-    <img src="https://github.com/th3gundy.png" alt="th3gundy" width="50" height="50" style="border-radius: 50%">
-  </a>
-  <a href="https://github.com/tolgaakkapulu">
-    <img src="https://github.com/tolgaakkapulu.png" alt="tolgaakkapulu" width="50" height="50" style="border-radius: 50%">
-  </a>
-  <a href="https://github.com/mkdemir">
-    <img src="https://github.com/mkdemir.png" alt="mkdemir" width="50" height="50" style="border-radius: 50%">
-  </a>
-  <!-- Diğer sponsorlar -->
-</div>
-
-
-If you are interested in becoming a sponsor, please visit our [GitHub Sponsors](https://github.com/sponsors/mtnmunuklu) page.
 
 ## License
 
