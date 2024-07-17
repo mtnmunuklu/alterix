@@ -8,8 +8,6 @@ import (
 	"github.com/mtnmunuklu/alterix/sigma"
 )
 
-// RuleEvaluator represents a rule evaluator that is capable of computing the search, condition, and query results of a Sigma rule.
-// It holds the rule configuration, search conditions, and field mappings necessary to apply the rule to log events and generate the query results.
 type RuleEvaluator struct {
 	sigma.Rule
 	config          []sigma.Config      // Additional configuration options to use when evaluating the rule

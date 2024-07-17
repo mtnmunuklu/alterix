@@ -8,15 +8,13 @@ import (
 	"github.com/mtnmunuklu/alterix/yara"
 )
 
-// RuleEvaluator represents a rule evaluator that is capable of computing the search, condition, and query results of a Yara rule.
-// It holds the rule configuration, search conditions, and field mappings necessary to apply the rule to log events and generate the query results.
 type RuleEvaluator struct {
 	*ast.Rule
 	config        []yara.Config       // Additional configuration options to use when evaluating the rule
 	fieldmappings map[string][]string // A compiled mapping from rule fieldnames to possible event fieldnames
 }
 
-// ForRule constructs a new RuleEvaluator with the given Sigma rule and evaluation options.
+// ForRule constructs a new RuleEvaluator with the given Yara rule and evaluation options.
 // It applies any provided options to the new RuleEvaluator and returns it.
 func ForRule(rule *ast.Rule, options ...Option) *RuleEvaluator {
 	e := &RuleEvaluator{Rule: rule}
@@ -26,8 +24,7 @@ func ForRule(rule *ast.Rule, options ...Option) *RuleEvaluator {
 	return e
 }
 
-// Result represents the evaluation result of a Sigma rule.
-// It contains the search, condition, aggregation, and query results of the rule evaluation.
+// Result represents the evaluation result of a Yara rule.
 type Result struct {
 	MetaResults     map[string]string
 	StringsResults  map[string]string // The map of strings identifiers to their result values
@@ -35,8 +32,7 @@ type Result struct {
 	QueryResult     string            // The map of query indices to their result values
 }
 
-// This function returns a Result object containing the evaluation results for the rule's Detection field.
-// It uses the evaluateSearch, evaluateSearchExpression and evaluateAggregationExpression functions to compute the results.
+// This function returns a Result object containing the evaluation results for the yara rule.
 func (rule RuleEvaluator) Alters() (Result, error) {
 	result := Result{
 		MetaResults:    make(map[string]string),

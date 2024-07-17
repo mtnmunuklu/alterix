@@ -6,9 +6,8 @@ import (
 
 // Config is a struct that defines the Sigma configuration
 type Config struct {
-	Title         string   // A short description of what this configuration does
-	Order         int      // Defines the order of expansion when multiple config files are applicable
-	Backends      []string // Lists the Sigma implementations that this config file is compatible with
+	Title         string // A short description of what this configuration does
+	Order         int    // Defines the order of expansion when multiple config files are applicable
 	FieldMappings map[string]FieldMapping
 	Logsources    map[string]LogsourceMapping
 	// TODO: LogsourceMerging option
@@ -19,7 +18,6 @@ type Config struct {
 // FieldMapping is a struct that defines the target fields to be matched in Sigma rules
 type FieldMapping struct {
 	TargetNames []string // The name(s) that appear in the events being matched
-	// TODO: support conditional mappings?
 }
 
 // UnmarshalYAML is a custom method for unmarshaling YAML data into FieldMapping

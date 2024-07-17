@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -12,15 +13,23 @@ import (
 )
 
 func TestParseRule(t *testing.T) {
-	yara_rule, err := os.Open("../data/rules/sus_nsis_tampered_signature.yar")
+	yara_rule_file, err := os.Open("../data/rules/sus_nsis_tampered_signature.yar")
 	if err != nil {
 		fmt.Println("Error opening the file: ", err)
+		return
 	}
-	defer yara_rule.Close()
+	defer yara_rule_file.Close()
+
+	yara_rule, err := io.ReadAll(yara_rule_file)
+	if err != nil {
+		fmt.Println("Error reading the file: ", err)
+		return
+	}
 
 	ruleset, err := yara.ParseRule(yara_rule)
 	if err != nil {
 		fmt.Println("Error parsing the rules: ", err)
+		return
 	}
 
 	yara_config, err := os.ReadFile("../data/configs/yara.config.yml")
