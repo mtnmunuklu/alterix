@@ -1,0 +1,13 @@
+{
+  "Name": "IOC Rule ip, domain, url",
+  "Description": "",
+  "Query": "sourcetype=\"*\" eql select * from _source_ where _condition_ and (dst_ip = '95.8.80.107' OR dst_host = 'www.whatismyip.com' OR url = 'https://www.whatismyip.com')",
+  "InsertDate": "2024-07-17T20:25:33Z",
+  "LastUpdateDate": "2024-07-17T20:25:33Z",
+  "Tags": [
+    "ip",
+    "domain",
+    "url"
+  ],
+  "Level": "info"
+}

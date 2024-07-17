@@ -1,0 +1,7 @@
+title: Conversion of IOCs into CRYPTTECH Specific Queries
+order: 10
+fieldmappings:
+  ip: dst_ip
+  domain: dst_host
+  hash: hash
+  url: url

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mtnmunuklu/alterix/ioc"
+	"github.com/mtnmunuklu/alterix/ioc/ievaluator"
 	"github.com/mtnmunuklu/alterix/sigma"
 	"github.com/mtnmunuklu/alterix/sigma/sevaluator"
 	"github.com/mtnmunuklu/alterix/yara"
@@ -29,6 +31,7 @@ var (
 	caseSensitive bool
 	useSigma      bool
 	useYara       bool
+	useIOC        bool
 )
 
 // Set up the command-line flags
@@ -44,11 +47,12 @@ func init() {
 	flag.BoolVar(&caseSensitive, "cs", false, "Case sensitive mode")
 	flag.BoolVar(&useSigma, "sigma", false, "Use Sigma rules")
 	flag.BoolVar(&useYara, "yara", false, "Use Yara rules")
+	flag.BoolVar(&useIOC, "ioc", false, "Use IOCs")
 	flag.Parse()
 
 	// If the version flag is provided, print version information and exit
 	if version {
-		fmt.Println("Alterix version 1.4.4")
+		fmt.Println("Alterix version 1.5.0")
 		os.Exit(1)
 	}
 
@@ -165,18 +169,51 @@ func formatYaraJSONResult(title, query string, tags []string, metas map[string]s
 	return jsonData
 }
 
+func formatIOCJSONResult(tags []string, query, name, description, level string) []byte {
+	// Define a struct type named JSONResult to represent the JSON output fields.
+	type JSONResult struct {
+		Name           string   `json:"Name"`
+		Description    string   `json:"Description"`
+		Query          string   `json:"Query"`
+		InsertDate     string   `json:"InsertDate"`
+		LastUpdateDate string   `json:"LastUpdateDate"`
+		Tags           []string `json:"Tags"`
+		Level          string   `json:"Level"`
+	}
+
+	// Create an instance of the JSONResult struct.
+	jsonResult := JSONResult{
+		Name:           name,
+		Description:    description,
+		Query:          query,
+		InsertDate:     time.Now().UTC().Format(time.RFC3339),
+		LastUpdateDate: time.Now().UTC().Format(time.RFC3339),
+		Tags:           tags,
+		Level:          level,
+	}
+
+	// Marshal the JSONResult struct into JSON data.
+	jsonData, err := json.MarshalIndent(jsonResult, "", "  ")
+	if err != nil {
+		fmt.Println("Error encoding JSON:", err)
+		return nil
+	}
+
+	return jsonData
+}
+
 func printUsage() {
-	fmt.Println("Usage: alterix -sigma/-yara -filepath <path> -config <path> [flags]")
+	fmt.Println("Usage: alterix -sigma/-yara/-ioc -filepath <path> -config <path> [flags]")
 	fmt.Println("Flags:")
 	flag.PrintDefaults()
 	fmt.Println("Example:")
-	fmt.Println("  alterix -sigma/-yara -filepath /path/to/file -config /path/to/config")
+	fmt.Println("  alterix -sigma/-yara/-ioc -filepath /path/to/file -config /path/to/config")
 }
 
 func main() {
 	// Ensure either Sigma or Yara flag is provided
-	if !useSigma && !useYara {
-		fmt.Println("Please provide either --sigma or --yara flag to specify the type of rules.")
+	if !useSigma && !useYara && !useIOC {
+		fmt.Println("Please provide either -sigma, -yara or -ioc flag to specify the type of rules.")
 		printUsage()
 		os.Exit(1)
 	}
@@ -328,7 +365,7 @@ func main() {
 				fmt.Printf("%s", output)
 			}
 		} else if useYara {
-			yaraRuleSet, err := yara.ParseByte(fileContent)
+			yaraRuleSet, err := yara.ParseRule(fileContent)
 			if err != nil {
 				fmt.Println("Error parsing rule:", err)
 				continue
@@ -377,6 +414,54 @@ func main() {
 					fmt.Printf("%s", output)
 				}
 			}
+		} else if useIOC {
+			iocs, err := ioc.ParseIOC(fileContent)
+			if err != nil {
+				fmt.Println("Error parsing rule:", err)
+				continue
+			}
+
+			// Parse the configuration file as a IOC config
+			config, err := ioc.ParseConfig(configContents)
+			if err != nil {
+				fmt.Println("Error parsing config:", err)
+				continue
+			}
+
+			ir := ievaluator.ForIOC(iocs, ievaluator.WithConfig(config))
+			result, err := ir.Alters()
+			if err != nil {
+				fmt.Println("Error converting rule:", err)
+				continue
+			}
+
+			var output string
+
+			// Print the results of the query
+			if outputJSON {
+				jsonResult := formatIOCJSONResult(result.Tags, result.QueryResult, "IOC Rule "+strings.Join(result.Tags, ", "), "", "info")
+				output = string(jsonResult)
+			} else {
+				output = result.QueryResult
+			}
+
+			// Check if outputPath is provided
+			if outputPath != "" {
+				// Create the output file path using the Name field from the rule
+				outputFilePath := filepath.Join(outputPath, fmt.Sprintf("%s.json", "IOC Rule "+strings.Join(result.Tags, ", ")))
+
+				// Write the output string to the output file
+				err := os.WriteFile(outputFilePath, []byte(output), 0644)
+				if err != nil {
+					fmt.Println("Error writing output to file:", err)
+					continue
+				}
+
+				fmt.Printf("Output for rule '%s' written to file: %s\n", "IOC Rule "+strings.Join(result.Tags, ", "), outputFilePath)
+			} else {
+				fmt.Printf("%s", output)
+			}
+
 		}
 	}
 }
