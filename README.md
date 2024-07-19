@@ -7,7 +7,7 @@
 
 # Alterix
 
-Alterix is a tool that converts Sigma and Yara rules to the query language of CRYPTTECH's next-generation SIEM product.
+Alterix is a tool that converts Sigma, Yara rules, and IOCs (Indicators of Compromise) to the query language of CRYPTTECH's next-generation SIEM product.
 
 ## Table of Contents
 
@@ -25,7 +25,7 @@ Alterix is a tool that converts Sigma and Yara rules to the query language of CR
 
 ## Overview
 
-Sigma is an open-source project that provides a rule format and a set of tools for the creation and sharing of detection rules for security operations. Yara is a tool aimed at (but not limited to) helping malware researchers to identify and classify malware samples. CRYPTTECH's SIEM product uses a proprietary query language for searching through logs and identifying security events. Alterix serves as a bridge between Sigma, Yara, and CRYPTTECH's SIEM product, allowing security teams to leverage their existing Sigma and Yara rule sets with the advanced capabilities of CRYPTTECH's SIEM product.
+Sigma is an open-source project that provides a rule format and a set of tools for the creation and sharing of detection rules for security operations. Yara is a tool aimed at (but not limited to) helping malware researchers to identify and classify malware samples. IOCs (Indicators of Compromise) are artifacts observed on a network or in an operating system that indicate a security breach. CRYPTTECH's SIEM product uses a proprietary query language for searching through logs and identifying security events. Alterix serves as a bridge between Sigma, Yara, IOCs, and CRYPTTECH's SIEM product, allowing security teams to leverage their existing Sigma and Yara rule sets, as well as IOCs, with the advanced capabilities of CRYPTTECH's SIEM product.
 
 
 ## Installation
@@ -75,7 +75,7 @@ If you prefer to build Alterix from source, you can refer to the [Build Instruct
 
 ## Usage
 
-To use Alterix, you will need Sigma rules, Yara rules, and a configuration file for CRYPTTECH's SIEM product. Sigma rules are written in YAML format and can be found in the Sigma GitHub repository: https://github.com/Neo23x0/sigma/tree/master/rules. Yara rules are written in Yara's syntax and can be found in the Yara GitHub repository: https://github.com/VirusTotal/yara
+To use Alterix, you will need Sigma rules, Yara rules, IOCs, and a configuration file for CRYPTTECH's SIEM product. Sigma rules are written in YAML format and can be found in the Sigma GitHub repository: https://github.com/Neo23x0/sigma/tree/master/rules. Yara rules are written in Yara's syntax and can be found in the Yara GitHub repository: https://github.com/VirusTotal/yara. IOCs are typically provided by threat intelligence platforms and can be formatted in various ways.
 
 The configuration file for CRYPTTECH's SIEM product should be obtained from your system administrator.
 
@@ -107,6 +107,19 @@ To convert Yara rules to the query language of CRYPTTECH's SIEM product, follow 
     ./alterix -yara -filecontent <content-to-yara-rules> -configcontent <content-to-config> [-json] [-output <output-directory>]
     ```
 
+To convert IOCs to the query language of CRYPTTECH's SIEM product, follow these steps:
+
+1. Prepare IOCs and a configuration file.
+2. Convert IOCs to the query language of CRYPTTECH's SIEM product by running the following command:
+
+    ```shell
+    ./alterix -ioc -filepath <path-to-iocs> -config <path-to-config> [-json] [-output <output-directory>]
+    ```
+    or
+    ```shell
+    ./alterix -ioc -filecontent <content-to-iocs> -configcontent <content-to-config> [-json] [-output <output-directory>]
+    ```
+
 ### Docker Usage
 
 If you have installed Alterix using Docker, you can use the following command to run Alterix inside the Docker container:
@@ -126,6 +139,15 @@ docker exec alterix ./alterix -yara -filepath <path-to-yara-rules> -config <path
 or
 ```shell
 docker exec alterix ./alterix -yara -filecontent <content-to-yara-rules> -configcontent <content-to-config> [-json] [-output <output-directory>]
+```
+
+For IOCs:
+```shell
+docker exec alterix ./alterix -ioc -filepath <path-to-iocs> -config <path-to-config> [-json] [-output <output-directory>]
+```
+or
+```shell
+docker exec alterix ./alterix -ioc -filecontent <content-to-iocs> -configcontent <content-to-config> [-json] [-output <output-directory>]
 ```
 
 The `filepath` flag specifies the location of the Sigma rules. This can be a file or directory path.
