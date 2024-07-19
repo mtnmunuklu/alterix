@@ -2,6 +2,7 @@ package ievaluator
 
 import (
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/mtnmunuklu/alterix/ioc"
@@ -35,10 +36,10 @@ func (ioc IOCEvaluator) Alters() (Result, error) {
 	var tags []string
 
 	// Generate query parts for each field type
-	ipConditions := generateCondition(ioc.fieldmappings["ip"], ioc.IOC.IPs)
-	domainConditions := generateCondition(ioc.fieldmappings["domain"], ioc.IOC.Domains)
-	urlConditions := generateCondition(ioc.fieldmappings["url"], ioc.IOC.URLs)
-	hashConditions := generateCondition(ioc.fieldmappings["hash"], ioc.IOC.Hashes)
+	ipConditions := generateCondition(ioc.fieldmappings["ip"], filterUniqueValues(filterValues(ioc.IOC.IPs, checkIfLocalIP)))
+	domainConditions := generateCondition(ioc.fieldmappings["domain"], filterUniqueValues(ioc.IOC.Domains))
+	urlConditions := generateCondition(ioc.fieldmappings["url"], filterUniqueValues(ioc.IOC.URLs))
+	hashConditions := generateCondition(ioc.fieldmappings["hash"], filterUniqueValues(ioc.IOC.Hashes))
 
 	conditions = append(conditions, ipConditions...)
 	conditions = append(conditions, domainConditions...)
@@ -59,8 +60,8 @@ func (ioc IOCEvaluator) Alters() (Result, error) {
 		tags = append(tags, "hash")
 	}
 
-	// Join the conditions with " OR " and wrap in parentheses if there are multiple conditions
-	condition := strings.Join(conditions, " OR ")
+	// Join the conditions with " or " and wrap in parentheses if there are multiple conditions
+	condition := strings.Join(conditions, " or ")
 	if len(conditions) > 1 {
 		condition = fmt.Sprintf("(%s)", condition)
 	}
@@ -80,7 +81,7 @@ func generateCondition(fields []string, values []string) []string {
 	for _, field := range fields {
 		var condition string
 		if len(values) == 1 {
-			condition = fmt.Sprintf("%s = '%s'", field, values[0])
+			condition = fmt.Sprintf("%s='%s'", field, values[0])
 		} else if len(values) > 1 {
 			condition = fmt.Sprintf("%s in (%s)", field, joinValues(values))
 		}
@@ -98,4 +99,40 @@ func joinValues(values []string) string {
 		quotedValues[i] = fmt.Sprintf("'%s'", v)
 	}
 	return strings.Join(quotedValues, ", ")
+}
+
+// checkIfLocalIP checks if the provided IP address is a local IP.
+func checkIfLocalIP(ip string) bool {
+	parsedIP := net.ParseIP(ip)
+	if parsedIP == nil {
+		return false
+	}
+	if parsedIP.IsLoopback() || parsedIP.IsPrivate() {
+		return true
+	}
+	return false
+}
+
+// filterValues filters out values based on the provided filter function.
+func filterValues(values []string, filterFunc func(string) bool) []string {
+	var filteredValues []string
+	for _, value := range values {
+		if !filterFunc(value) {
+			filteredValues = append(filteredValues, value)
+		}
+	}
+	return filteredValues
+}
+
+// filterUniqueValues filters out duplicate values from the provided slice.
+func filterUniqueValues(values []string) []string {
+	valueSet := make(map[string]struct{})
+	var uniqueValues []string
+	for _, value := range values {
+		if _, exists := valueSet[value]; !exists {
+			valueSet[value] = struct{}{}
+			uniqueValues = append(uniqueValues, value)
+		}
+	}
+	return uniqueValues
 }

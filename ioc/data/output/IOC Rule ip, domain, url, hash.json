@@ -1,0 +1,14 @@
+{
+  "Name": "IOC Rule ip, domain, url, hash",
+  "Description": "",
+  "Query": "sourcetype=\"*\" eql select * from _source_ where _condition_ and (dst_ip='8.8.8.8' or dst_host in ('example.com', 'anotherdomain.net', 'thirdexample.org') or url in ('http://example.com', 'https://anotherdomain.net', 'http://thirdexample.org') or hash in ('abcdef1234567890abcdef1234567890', '1234567890abcdef1234567890abcdef', 'fedcba0987654321fedcba0987654321'))",
+  "InsertDate": "2024-07-18T07:18:45Z",
+  "LastUpdateDate": "2024-07-18T07:18:45Z",
+  "Tags": [
+    "ip",
+    "domain",
+    "url",
+    "hash"
+  ],
+  "Level": "info"
+}
