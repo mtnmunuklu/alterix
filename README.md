@@ -150,9 +150,9 @@ or
 docker exec alterix ./alterix -ioc -filecontent <content-to-iocs> -configcontent <content-to-config> [-json] [-output <output-directory>]
 ```
 
-The `filepath` flag specifies the location of the Sigma rules. This can be a file or directory path.
+The `filepath` flag specifies the location of the Sigma, Yara, or IOC rules. This can be a file or directory path.
 
-The `filecontent` flag allows you to provide the Base64-encoded content of Sigma rules directly as a string.
+The `filecontent` flag allows you to provide the Base64-encoded content of Sigma, Yara, or IOC rules directly as a string.
 
 The `config` flag specifies the location of the configuration file for CRYPTTECH's SIEM product.
 
@@ -162,7 +162,7 @@ The `json` flag indicates that the output should be in JSON format.
 
 The `output` flag specifies the directory where the output files should be written.
 
-If the json flag is provided, Alterix will convert the Sigma and Yara rules to JSON format. If the output flag is provided, Alterix will save the output files to the specified directory. If neither flag is provided, the output will be displayed in the console.
+If the `json` flag is provided, Alterix will convert the Sigma, Yara, and IOC rules to JSON format. If the `output` flag is provided, Alterix will save the output files to the specified directory. If neither flag is provided, the output will be displayed in the console.
 
 ## Demo
 
@@ -178,9 +178,10 @@ Contributions to Alterix are welcome and encouraged! Please read the [contributi
 
 This project was inspired by the work of Bradley Kemp, whose original repository can be found [here](https://github.com/bradleyjkemp/sigma-go). We would like to thank Bradley for his valuable contribution to the community and for making his code available to us.
 
-We also want to express our gratitude to the creators of the Sigma and Yara projects, as their rule formats form the backbone of this project. More information about Sigma can be found [here](https://github.com/Neo23x0/sigma), and about Yara [here](https://github.com/VirusTotal/yara).
+We also want to express our gratitude to the creators of the Sigma, Yara as their rule formats form the backbone of this project. More information about Sigma can be found [here](https://github.com/Neo23x0/sigma), about Yara [here](https://github.com/VirusTotal/yara).
 
 Additionally, we appreciate the efforts of the [VirusTotal Yara parser project](https://github.com/VirusTotal/gyp) for their work on Yara parsing, which has been instrumental in the development of this tool.
+
 
 ## License
 
