@@ -84,6 +84,7 @@ fieldmappings:
   SourceProcessId: process_id
   SourceImage: process_path
   Image: process_path
+  imagepath: process_path
   CommandLine: command
   CurrentDirectory: current_directory
   SourceUser: username
