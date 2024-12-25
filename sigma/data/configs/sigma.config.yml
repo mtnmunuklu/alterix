@@ -154,6 +154,7 @@ fieldmappings:
   Query: query
   ParentUser: puser
   TargetUser: dst_username
+  targetusername: dst_username
   Configuration: configuration
   ConfigurationFileHash: configuration_fhash
   State: state
@@ -164,3 +165,4 @@ fieldmappings:
   provider_name: providername
   data: msg
   scriptblocktext: script_block_text
+  name: process_path
