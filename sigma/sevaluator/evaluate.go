@@ -102,10 +102,10 @@ func (rule RuleEvaluator) Alters(ctx context.Context) (Result, error) {
 			}
 		} else if len(conditionList) > 1 {
 			// If the condition doesn't have an aggregation, add the conditionList to the final query string
-			result.QueryResults[i] = "eql select * from _source_ where _condition_ and " + "(" + strings.Join(conditionList, "") + ")"
+			result.QueryResults[i] = "eql select * from _source_ where " + "(" + strings.Join(conditionList, "") + ")"
 		} else {
 			// If the condition doesn't have an aggregation, add the conditionList to the final query string
-			result.QueryResults[i] = "eql select * from _source_ where _condition_ and " + strings.Join(conditionList, "")
+			result.QueryResults[i] = "eql select * from _source_ where " + strings.Join(conditionList, "")
 		}
 
 		// Add the sourcetype condition to the final query string, if applicable

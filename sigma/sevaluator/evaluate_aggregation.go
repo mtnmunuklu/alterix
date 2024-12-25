@@ -41,10 +41,10 @@ func (rule RuleEvaluator) evaluateAggregationFunc(ctx context.Context, condition
 		if agg.Field == "" {
 			// If there is a group by clause, add it to the select statement
 			if agg.GroupedBy != "" {
-				result = "eql select " + agg.GroupedBy + ", count(*) from _source_ where _condition_ and |group by " + agg.GroupedBy + " order by count(*) desc"
+				result = "eql select " + agg.GroupedBy + ", count(*) from _source_ where |group by " + agg.GroupedBy + " order by count(*) desc"
 			} else {
 				// Add the count function to the select statement
-				result = "eql select count(*) from _source_ where _condition_ and |order by count(*) desc"
+				result = "eql select count(*) from _source_ where |order by count(*) desc"
 			}
 			return result, nil
 		} else {
@@ -58,10 +58,10 @@ func (rule RuleEvaluator) evaluateAggregationFunc(ctx context.Context, condition
 				if len(rule.fieldmappings[agg.GroupedBy]) != 0 {
 					agg.GroupedBy = rule.fieldmappings[agg.GroupedBy][0]
 				}
-				result += ", " + agg.GroupedBy + ", count(*) from _source_ where _condition_ and |group by " + agg.Field + ", " + agg.GroupedBy + " order by count(*) desc"
+				result += ", " + agg.GroupedBy + ", count(*) from _source_ where |group by " + agg.Field + ", " + agg.GroupedBy + " order by count(*) desc"
 			} else {
 				// Add the count function to the select statement
-				result += ", count(*) from _source_ where _condition_ and |group by " + agg.Field + " order by count(*) desc"
+				result += ", count(*) from _source_ where |group by " + agg.Field + " order by count(*) desc"
 			}
 			return result, nil
 		}
@@ -77,10 +77,10 @@ func (rule RuleEvaluator) evaluateAggregationFunc(ctx context.Context, condition
 			if len(rule.fieldmappings[agg.GroupedBy]) != 0 {
 				agg.GroupedBy = rule.fieldmappings[agg.GroupedBy][0]
 			}
-			result += ", " + agg.GroupedBy + ", avg(" + agg.Field + ") from _source_ where _condition_ and |group by " + agg.Field + ", " + agg.GroupedBy + " order by avg(" + agg.Field + ") desc"
+			result += ", " + agg.GroupedBy + ", avg(" + agg.Field + ") from _source_ where |group by " + agg.Field + ", " + agg.GroupedBy + " order by avg(" + agg.Field + ") desc"
 		} else {
 			// Add the average function to the select statement
-			result += ", avg(" + agg.Field + ") from _source where _condition_ and |group by " + agg.Field + " order by avg(" + agg.Field + ") desc"
+			result += ", avg(" + agg.Field + ") from _source where |group by " + agg.Field + " order by avg(" + agg.Field + ") desc"
 		}
 		return result, nil
 
@@ -95,10 +95,10 @@ func (rule RuleEvaluator) evaluateAggregationFunc(ctx context.Context, condition
 			if len(rule.fieldmappings[agg.GroupedBy]) != 0 {
 				agg.GroupedBy = rule.fieldmappings[agg.GroupedBy][0]
 			}
-			result += ", " + agg.GroupedBy + ", sum(" + agg.Field + ") from _source_ where _condition_ and |group by " + agg.Field + ", " + agg.GroupedBy + " order by sum(" + agg.Field + ") desc"
+			result += ", " + agg.GroupedBy + ", sum(" + agg.Field + ") from _source_ where |group by " + agg.Field + ", " + agg.GroupedBy + " order by sum(" + agg.Field + ") desc"
 		} else {
 			// Add the sum function to the select statement
-			result += ", sum(" + agg.Field + ") from _source where _condition_ and |group by " + agg.Field + " order by sum(" + agg.Field + ") desc"
+			result += ", sum(" + agg.Field + ") from _source_ where |group by " + agg.Field + " order by sum(" + agg.Field + ") desc"
 		}
 
 		return result, nil
@@ -115,10 +115,10 @@ func (rule RuleEvaluator) evaluateAggregationFunc(ctx context.Context, condition
 			if len(rule.fieldmappings[agg.GroupedBy]) != 0 {
 				agg.GroupedBy = rule.fieldmappings[agg.GroupedBy][0]
 			}
-			result += ", " + agg.GroupedBy + ", min(" + agg.Field + ") from _source_ where _condition_ and |group by " + agg.Field + ", " + agg.GroupedBy + " order by min(" + agg.Field + ") desc"
+			result += ", " + agg.GroupedBy + ", min(" + agg.Field + ") from _source_ where |group by " + agg.Field + ", " + agg.GroupedBy + " order by min(" + agg.Field + ") desc"
 		} else {
 			// Add the aggregation function to the query and set the having clause to filter by the minimum value of the field.
-			result += ", min(" + agg.Field + ") from _source where _condition_ and |group by " + agg.Field + " order by min(" + agg.Field + ") desc"
+			result += ", min(" + agg.Field + ") from _source_ where |group by " + agg.Field + " order by min(" + agg.Field + ") desc"
 		}
 		return result, nil
 
@@ -134,10 +134,10 @@ func (rule RuleEvaluator) evaluateAggregationFunc(ctx context.Context, condition
 			if len(rule.fieldmappings[agg.GroupedBy]) != 0 {
 				agg.GroupedBy = rule.fieldmappings[agg.GroupedBy][0]
 			}
-			result += ", " + agg.GroupedBy + ", max(" + agg.Field + ") from _source_ where _condition_ and |group by " + agg.Field + ", " + agg.GroupedBy + " order by max(" + agg.Field + ") desc"
+			result += ", " + agg.GroupedBy + ", max(" + agg.Field + ") from _source_ where |group by " + agg.Field + ", " + agg.GroupedBy + " order by max(" + agg.Field + ") desc"
 		} else {
 			// Add the aggregation function to the query and set the having clause to filter by the maximum value of the field.
-			result += ", max(" + agg.Field + ") from _source where _condition_ and |group by " + agg.Field + " order by min(" + agg.Field + ") desc"
+			result += ", max(" + agg.Field + ") from _source where |group by " + agg.Field + " order by min(" + agg.Field + ") desc"
 		}
 		return result, nil
 

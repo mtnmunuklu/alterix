@@ -1,7 +1,7 @@
 {
   "Name": "Chafer Activity",
   "Description": "Detects Chafer activity attributed to OilRig as reported in Nyotron report in March 2018\n\nAuthor: Florian Roth, Markus Neis, Jonhnathan Ribeiro, Daniil Yugoslavskiy, oscd.community\nSigma Repository: [GitHub](https://github.com/SigmaHQ/sigma)",
-  "Query": "sourcetype='windows-sysmon' eql select * from _source_ where _condition_ and (command like '%\\Service.exe%' and (command like '%i' or command like '%u')) or (command like '%\\microsoft\\Taskbar\\autoit3.exe' and command like 'C:\\wsc.exe%') or (process_path like '%\\Windows\\Temp\\DB\\%' and process_path like '%.exe') or ((command like '%\\nslookup.exe%' and command like '%-q=TXT%') and parent_process_path like '%\\Autoit%')",
+  "Query": "sourcetype='windows-sysmon' eql select * from _source_ where (command like '%\\Service.exe%' and (command like '%i' or command like '%u')) or (command like '%\\microsoft\\Taskbar\\autoit3.exe' and command like 'C:\\wsc.exe%') or (process_path like '%\\Windows\\Temp\\DB\\%' and process_path like '%.exe') or ((command like '%\\nslookup.exe%' and command like '%-q=TXT%') and parent_process_path like '%\\Autoit%')",
   "InsertDate": "2024-03-02T15:59:48Z",
   "LastUpdateDate": "2024-03-02T15:59:48Z",
   "Tags": [

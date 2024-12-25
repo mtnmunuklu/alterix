@@ -1,7 +1,7 @@
 {
   "Name": "IOC Rule ip, domain, url",
   "Description": "",
-  "Query": "sourcetype=\"*\" eql select * from _source_ where _condition_ and (dst_ip='95.8.80.107' or dst_host='www.whatismyip.com' or url='https://www.whatismyip.com')",
+  "Query": "sourcetype=\"*\" eql select * from _source_ where (dst_ip='95.8.80.107' or dst_host='www.whatismyip.com' or url='https://www.whatismyip.com')",
   "InsertDate": "2024-07-18T06:50:25Z",
   "LastUpdateDate": "2024-07-18T06:50:25Z",
   "Tags": [

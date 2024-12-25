@@ -66,7 +66,7 @@ func (ioc IOCEvaluator) Alters() (Result, error) {
 		condition = fmt.Sprintf("(%s)", condition)
 	}
 
-	query := fmt.Sprintf(`sourcetype="*" eql select * from _source_ where _condition_ and %s`, condition)
+	query := fmt.Sprintf(`sourcetype="*" eql select * from _source_ where %s`, condition)
 	result := Result{
 		QueryResult: query,
 		Tags:        tags,

@@ -75,7 +75,7 @@ func (rule RuleEvaluator) Alters() (Result, error) {
 		}
 	}
 
-	result.QueryResult = "sourcetype='*' eql select * from _source_ where _condition_ and " + result.ConditionResult
+	result.QueryResult = "sourcetype='*' eql select * from _source_ where " + result.ConditionResult
 
 	return result, nil
 }
