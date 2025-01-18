@@ -359,7 +359,7 @@ func (rule RuleEvaluator) serializeJump(filter *strings.Builder, jump *pb.Jump) 
 
 // Serializes HexAlternative and appends the result to the filter
 func (rule RuleEvaluator) serializeHexAlternative(filter *strings.Builder, alt *pb.HexAlternative) error {
-	if _, err := filter.WriteString("( "); err != nil {
+	if _, err := filter.WriteString("("); err != nil {
 		return err
 	}
 
@@ -374,7 +374,7 @@ func (rule RuleEvaluator) serializeHexAlternative(filter *strings.Builder, alt *
 		}
 	}
 
-	if _, err := filter.WriteString(") "); err != nil {
+	if _, err := filter.WriteString(")"); err != nil {
 		return err
 	}
 
@@ -619,9 +619,9 @@ func (rule RuleEvaluator) serializeAndExpression(condition *strings.Builder, exp
 
 func (rule RuleEvaluator) serializeTerms(condition *strings.Builder, terms []*pb.Expression, joinStr string, precedence int8) error {
 	for i, term := range terms {
-		addParens := getExpressionPrecedence(term) < precedenceAndExpression
+		addParens := getExpressionPrecedence(term) < precedence
 		if addParens {
-			if _, err := condition.WriteString("( "); err != nil {
+			if _, err := condition.WriteString("("); err != nil {
 				return err
 			}
 		}
@@ -631,7 +631,7 @@ func (rule RuleEvaluator) serializeTerms(condition *strings.Builder, terms []*pb
 		}
 
 		if addParens {
-			if _, err := condition.WriteString(" )"); err != nil {
+			if _, err := condition.WriteString(")"); err != nil {
 				return err
 			}
 		}

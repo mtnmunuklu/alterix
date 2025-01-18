@@ -2,6 +2,7 @@ package yevaluator
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/VirusTotal/gyp/ast"
@@ -68,14 +69,27 @@ func (rule RuleEvaluator) Alters() (Result, error) {
 		return Result{}, fmt.Errorf("error evaluating expression: %w", err)
 	}
 
-	result.ConditionResult = condition.String()
-	for key, value := range result.StringsResults {
-		if strings.Contains(result.ConditionResult, "$"+key) {
-			result.ConditionResult = strings.ReplaceAll(result.ConditionResult, "$"+key, value)
-		}
-	}
+	result.ConditionResult = processConditionResult(condition.String(), result.StringsResults)
 
 	result.QueryResult = "sourcetype='*' eql select * from _source_ where " + result.ConditionResult
 
 	return result, nil
+}
+
+func processConditionResult(condition string, stringsResults map[string]string) string {
+	keys := make([]string, 0, len(stringsResults))
+	for key := range stringsResults {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return len(keys[i]) > len(keys[j]) // Uzunluk sırasına göre azalan.
+	})
+
+	for _, key := range keys {
+		if strings.Contains(condition, "$"+key) {
+			condition = strings.ReplaceAll(condition, "$"+key, stringsResults[key])
+		}
+	}
+
+	return condition
 }
