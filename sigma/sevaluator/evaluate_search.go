@@ -198,19 +198,8 @@ func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Searc
 	var filters []string
 
 	if len(search.Keywords) > 0 {
-		comparator, err := modifiers.GetComparator("contains")
-		if rule.caseSensitive {
-			comparator, err = modifiers.GetComparatorCaseSensitive("contains")
-		}
-		if err != nil {
-			return filters, err
-		}
-
-		filter, err := rule.matcherMatchesValues(search.Keywords, []string{"log"}, comparator, false)
-		if err != nil {
-			return filters, err
-		}
-
+		joined := strings.Join(search.Keywords, " OR ")
+		filter := fmt.Sprintf("Query('%s')", joined)
 		filters = append(filters, filter)
 		return filters, nil
 	}
