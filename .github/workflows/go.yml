@@ -53,12 +53,12 @@ jobs:
       - name: Find Config Files (Linux, macOS)
         if: ${{ matrix.platform != 'windows-latest' }}
         run: |
-          find . -name "sysmon.config.yml" -o -name "yara.config.yml" > config_files.txt
+          find . -name "sigma.config.yml" -o -name "yara.config.yml" > config_files.txt
 
       - name: Find Config Files (Windows)
         if: ${{ matrix.platform == 'windows-latest' }}
         run: |
-          Get-ChildItem -Recurse -Filter *.yml | Where-Object { $_.Name -in "sysmon.config.yml", "yara.config.yml" } | ForEach-Object { $_.FullName } | Out-File config_files.txt
+          Get-ChildItem -Recurse -Filter *.yml | Where-Object { $_.Name -in "sigma.config.yml", "yara.config.yml" } | ForEach-Object { $_.FullName } | Out-File config_files.txt
 
       - name: Create Zip Archive (Windows)
         if: ${{ matrix.platform == 'windows-latest' }}
