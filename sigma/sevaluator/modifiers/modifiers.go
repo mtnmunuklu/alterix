@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
+	"net"
 	"strings"
 	"unicode/utf16"
 )
@@ -170,13 +171,18 @@ func (startswithCS) Alters(field, value any) (string, error) {
 type re struct{}
 
 func (re) Alters(field any, value any) (string, error) {
-	return fmt.Sprintf("%v re '%v'", strings.ToLower(coerceString(field)), coerceString(value)), nil
+	return fmt.Sprintf("%v rlike '%v'", strings.ToLower(coerceString(field)), coerceString(value)), nil
 }
 
 type cidr struct{}
 
 func (cidr) Alters(field any, value any) (string, error) {
-	return fmt.Sprintf("%v cidr '%v'", strings.ToLower(coerceString(field)), coerceString(value)), nil
+	// Generate regex based on the CIDR value.
+	regex, err := generateRegexFromCIDR(coerceString(value))
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%v rlike '%v'", strings.ToLower(coerceString(field)), regex), nil
 }
 
 type gt struct{}
@@ -229,4 +235,35 @@ func coerceString(v interface{}) string {
 	default:
 		return fmt.Sprint(vv)
 	}
+}
+
+// Converts CIDR notation into a regex pattern for RLIKE in SQL.
+func generateRegexFromCIDR(cidrValue string) (string, error) {
+	_, ipNet, err := net.ParseCIDR(cidrValue)
+	if err != nil {
+		return "", fmt.Errorf("invalid CIDR value: %v", err)
+	}
+
+	// Extract network and mask from CIDR.
+	ip := ipNet.IP.To4()
+	if ip == nil {
+		return "", fmt.Errorf("only IPv4 is supported")
+	}
+
+	// Retrieve the number of masked bits from ipNet.Mask.Size().
+	maskBits, _ := ipNet.Mask.Size() // The second value is ignored using `_`.
+
+	// Generate regex from CIDR (example for /24).
+	// For instance, "192.168.0.0/24" → "^192\\.168\\.0\\.\\d{1,3}$"
+	regexParts := []string{}
+	for i := 0; i < maskBits/8; i++ {
+		regexParts = append(regexParts, fmt.Sprintf("%d", ip[i]))
+	}
+	for i := maskBits / 8; i < 4; i++ {
+		regexParts = append(regexParts, "\\d{1,3}")
+	}
+
+	// Combine the generated regex.
+	regex := "^" + strings.Join(regexParts, "\\.") + "$"
+	return regex, nil
 }
