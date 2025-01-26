@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"flag"
@@ -327,8 +326,7 @@ func main() {
 				sr = sevaluator.ForRule(sigmaRule, sevaluator.WithConfig(config))
 			}
 
-			ctx := context.Background()
-			result, err := sr.Alters(ctx)
+			result, err := sr.Alters()
 			if err != nil {
 				fmt.Println("Error converting rule:", err)
 				continue

@@ -1,14 +1,13 @@
 package sevaluator
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/mtnmunuklu/alterix/sigma"
 )
 
 // evaluateAggregationExpression evaluates an aggregation expression within a Sigma rule
-func (rule RuleEvaluator) evaluateAggregationExpression(ctx context.Context, conditionIndex int, aggregation sigma.AggregationExpr) (string, error) {
+func (rule RuleEvaluator) evaluateAggregationExpression(aggregation sigma.AggregationExpr) (string, error) {
 	var aggregationResult string
 
 	// Determine the type of aggregation expression
@@ -18,7 +17,7 @@ func (rule RuleEvaluator) evaluateAggregationExpression(ctx context.Context, con
 
 	case sigma.Comparison:
 		// Evaluate the aggregation function
-		aggregationResult, err := rule.evaluateAggregationFunc(ctx, conditionIndex, agg.Func)
+		aggregationResult, err := rule.evaluateAggregationFunc(agg.Func)
 		if err != nil {
 			return aggregationResult, err
 		}
@@ -33,7 +32,7 @@ func (rule RuleEvaluator) evaluateAggregationExpression(ctx context.Context, con
 }
 
 // evaluateAggregationFunc evaluates the given aggregation function and returns the resulting query string.
-func (rule RuleEvaluator) evaluateAggregationFunc(ctx context.Context, conditionIndex int, aggregation sigma.AggregationFunc) (string, error) {
+func (rule RuleEvaluator) evaluateAggregationFunc(aggregation sigma.AggregationFunc) (string, error) {
 	var result string
 	switch agg := aggregation.(type) {
 	case sigma.Count:

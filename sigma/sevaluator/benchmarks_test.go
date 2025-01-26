@@ -1,7 +1,6 @@
 package sevaluator_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -160,8 +159,6 @@ func BenchmarkRuleEvaluator_Alters(b *testing.B) {
 	// Create a RuleEvaluator for the given rule and config
 	//r := sevaluator.ForRule(rule, sevaluator.WithConfig(config))
 	r := sevaluator.ForRule(rule, sevaluator.WithConfig(config))
-	// Create a context
-	ctx := context.Background()
 
 	// Run a benchmark for the JustMatch case
 	b.Run("JustMatch", func(b *testing.B) {
@@ -170,7 +167,7 @@ func BenchmarkRuleEvaluator_Alters(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 
 			// Evaluate the rule using the RuleEvaluator.Alters method
-			result, err := r.Alters(ctx)
+			result, err := r.Alters()
 			if err != nil {
 				b.Fatal(err)
 			}

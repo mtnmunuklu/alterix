@@ -1,7 +1,6 @@
 package sevaluator
 
 import (
-	"context"
 	"fmt"
 	"path"
 	"strings"
@@ -194,7 +193,7 @@ func (rule RuleEvaluator) evaluateSearchExpression(search sigma.SearchExpr, cond
 	panic(fmt.Sprintf("unhandled node type %T", search))
 }
 
-func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Search) ([]string, error) {
+func (rule RuleEvaluator) evaluateSearch(search sigma.Search) ([]string, error) {
 	var filters []string
 
 	if len(search.Keywords) > 0 {
@@ -224,7 +223,7 @@ func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Searc
 				return filters, err
 			}
 
-			matcherValues, err := rule.getMatcherValues(ctx, fieldMatcher)
+			matcherValues, err := rule.getMatcherValues(fieldMatcher)
 			if err != nil {
 				return filters, err
 			}
@@ -247,7 +246,7 @@ func (rule RuleEvaluator) evaluateSearch(ctx context.Context, search sigma.Searc
 }
 
 // getMatcherValues function retrieves the matching values for a field matcher.
-func (rule *RuleEvaluator) getMatcherValues(ctx context.Context, matcher sigma.FieldMatcher) ([]string, error) {
+func (rule *RuleEvaluator) getMatcherValues(matcher sigma.FieldMatcher) ([]string, error) {
 	// Initialize an empty array for the matching values.
 	matcherValues := []string{}
 
@@ -272,7 +271,7 @@ func (rule *RuleEvaluator) getMatcherValues(ctx context.Context, matcher sigma.F
 			if rule.expandPlaceholder == nil {
 				return nil, fmt.Errorf("can't expand %s, no placeholder expander function defined", value)
 			}
-			placeholderValues, err := rule.expandPlaceholder(ctx, value)
+			placeholderValues, err := rule.expandPlaceholder(value)
 			if err != nil {
 				return nil, fmt.Errorf("failed to expand placeholder: %w", err)
 			}

@@ -1,8 +1,6 @@
 package sevaluator
 
 import (
-	"context"
-
 	"github.com/mtnmunuklu/alterix/sigma"
 )
 
@@ -50,8 +48,8 @@ func init() {
 func FuzzRuleMatches(data []byte) int {
 	// Create a rule object and pass in the parsed rule and configuration
 	r := ForRule(rule, WithConfig(config))
-	// Call the Alters() method on the rule object with a background context
-	_, err := r.Alters(context.Background())
+	// Call the Alters() method on the rule object
+	_, err := r.Alters()
 	// If an error occurs, return 0 to indicate that the input did not trigger an alteration
 	if err != nil {
 		return 0

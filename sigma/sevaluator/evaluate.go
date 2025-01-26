@@ -1,7 +1,6 @@
 package sevaluator
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -15,7 +14,7 @@ type RuleEvaluator struct {
 	indexConditions []sigma.Search      // Any field-value conditions that need to match for this rule to apply to events from []indexes
 	fieldmappings   map[string][]string // A compiled mapping from rule fieldnames to possible event fieldnames
 
-	expandPlaceholder func(ctx context.Context, placeholderName string) ([]string, error) // A function to expand placeholders in the Sigma rule template
+	expandPlaceholder func(placeholderName string) ([]string, error) // A function to expand placeholders in the Sigma rule template
 	caseSensitive     bool
 }
 
@@ -40,7 +39,7 @@ type Result struct {
 
 // This function returns a Result object containing the evaluation results for the rule's Detection field.
 // It uses the evaluateSearch, evaluateSearchExpression and evaluateAggregationExpression functions to compute the results.
-func (rule RuleEvaluator) Alters(ctx context.Context) (Result, error) {
+func (rule RuleEvaluator) Alters() (Result, error) {
 	result := Result{
 		SearchResults:      make(map[string][]string),
 		ConditionResults:   make(map[int][]string),
@@ -51,7 +50,7 @@ func (rule RuleEvaluator) Alters(ctx context.Context) (Result, error) {
 	// Evaluate all the search expressions in the Detection field and store the results in the SearchResults map of the result object.
 	for identifier, search := range rule.Detection.Searches {
 		var err error
-		result.SearchResults[identifier], err = rule.evaluateSearch(ctx, search)
+		result.SearchResults[identifier], err = rule.evaluateSearch(search)
 		if err != nil {
 			return Result{}, fmt.Errorf("error evaluating search %s: %w", identifier, err)
 		}
@@ -63,7 +62,7 @@ func (rule RuleEvaluator) Alters(ctx context.Context) (Result, error) {
 		result.ConditionResults[conditionIndex] = rule.evaluateSearchExpression(condition.Search, []string{}, true)
 		if condition.Aggregation != nil {
 			var err error
-			result.AggregationResults[conditionIndex], err = rule.evaluateAggregationExpression(ctx, conditionIndex, condition.Aggregation)
+			result.AggregationResults[conditionIndex], err = rule.evaluateAggregationExpression(condition.Aggregation)
 			if err != nil {
 				return Result{}, err
 			}

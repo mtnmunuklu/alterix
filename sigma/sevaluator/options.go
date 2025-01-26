@@ -1,8 +1,6 @@
 package sevaluator
 
 import (
-	"context"
-
 	"github.com/mtnmunuklu/alterix/sigma"
 )
 
@@ -13,7 +11,7 @@ type Option func(*RuleEvaluator)
 // The placeholder expander is used to expand any placeholders that might be present in the Sigma rule before evaluation.
 // The provided function should take a context and a placeholder name and return a slice of strings that replace the placeholder in the Sigma rule.
 // If an error occurs during the expansion process, the function should return an error.
-func WithPlaceholderExpander(f func(ctx context.Context, placeholderName string) ([]string, error)) Option {
+func WithPlaceholderExpander(f func(placeholderName string) ([]string, error)) Option {
 	return func(e *RuleEvaluator) {
 		e.expandPlaceholder = f
 	}
